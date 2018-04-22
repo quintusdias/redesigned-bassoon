@@ -8,19 +8,14 @@ import platform
 import sys
 import warnings
 
-if sys.hexversion <= 0x03000000:
-    from ConfigParser import SafeConfigParser as ConfigParser
-    from ConfigParser import NoOptionError, NoSectionError
-else:
-    from configparser import ConfigParser
-    from configparser import NoOptionError, NoSectionError
-
 # default library locations for MacPorts
 _macports_default_location = {'openjp2': '/opt/local/lib/libopenjp2.dylib',
                               'openjpeg': '/opt/local/lib/libopenjpeg.dylib'}
 
 
-def load_tiff_library(libname):
+def load_library():
+
+    path = None
 
     if ((('Anaconda' in sys.version) or
          ('Continuum Analytics, Inc.' in sys.version) or
@@ -29,28 +24,28 @@ def load_tiff_library(libname):
         if platform.system() in ['Linux', 'Darwin']:
             suffix = '.so' if platform.system() == 'Linux' else '.dylib'
             basedir = os.path.dirname(os.path.dirname(sys.executable))
-            lib = os.path.join(basedir, 'lib', 'lib' + libname + suffix)
+            lib = os.path.join(basedir, 'lib', 'libtiff' + suffix)
         elif platform.system() == 'Windows':
             basedir = os.path.dirname(sys.executable)
-            lib = os.path.join(basedir, 'Library', 'bin', libname + '.dll')
+            lib = os.path.join(basedir, 'Library', 'bin', 'tiff.dll')
 
         if os.path.exists(lib):
             path = lib
 
     if path is None:
         # Can ctypes find it in the default system locations?
-        path = find_library(libname)
+        path = find_library('tiff')
 
     if path is None:
         if platform.system() == 'Darwin':
             # OpenJPEG may have been installed via MacPorts
-            path = _macports_default_location[libname]
+            path = _macports_default_location['tiff']
 
         if path is not None and not os.path.exists(path):
             # the mac/win default location does not exist.
             return None
 
-    return load_library_handle(libname, path)
+    return load_library_handle('tiff', path)
 
 
 def load_library_handle(libname, path):
@@ -61,6 +56,9 @@ def load_library_handle(libname, path):
         # user-configuration-file, or we could not find it in any of the
         # default locations, or possibly the user intentionally does not want
         # one of the libraries to load.
+        msg = "The tiff library could be loaded.  "
+        warnings.warn(msg)
+
         return None
 
     try:
@@ -75,19 +73,3 @@ def load_library_handle(libname, path):
         opj_lib = None
 
     return opj_lib
-
-
-def load_library():
-    """
-    Try to ascertain locations of the tiff library.
-
-    Returns
-    -------
-    library handle
-    """
-    handle = load_tiff_library('tiff')
-
-    if handle is None:
-        msg = "The tiff library could be loaded.  "
-        warnings.warn(msg)
-    return handle

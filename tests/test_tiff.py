@@ -1,34 +1,78 @@
-import pathlib
+# Local imports
+import itertools
+import tempfile
 import unittest
 
+# Third party library imports
 import numpy as np
-
-import glymur
-import pkg_resources as pkg
+import skimage.data
 import skimage.measure
 
-import tiffany
+# Local imports
 from tiffany.tiffany import TIFF
+from tiffany.lib import Compression, Photometric
+
 
 class TestSuite(unittest.TestCase):
 
-    def setUp(self):
-        self.nemo = pkg.resource_filename(__name__, 'data/nemo.tif')
-
-    def test_read_rgba(self):
+    def test_write_camera(self):
         """
-        SCENARIO:  read a full image in RGBA mode  
+        Scenario: Write the scikit-image "camera" to file.
 
-        EXPECTED RESULT:  The image dimensions are the same as that produced by
-        Glymur.  The image is very clean 
+        Expected Result:  The data should be round-trip the same for greyscale
+        photometric interpretations and lossless compression schemes.
         """
-        t = TIFF(tiffany.data.nemo)
-        im = t[:]
+        expected = skimage.data.camera()
 
-        j = glymur.Jp2k(glymur.data.nemo())
-        jim = j[:]
+        photometrics = (Photometric.MINISBLACK, Photometric.MINISWHITE)
+        compressions = (Compression.NONE, Compression.LZW,
+                        Compression.PACKBITS, Compression.DEFLATE,
+                        Compression.ADOBE_DEFLATE, Compression.LZMA)
+        tiled = (True, False)
+        modes = ('w', 'w8')
 
-        m = skimage.measure.compare_psnr(jim, np.flipud(im[:, :, :3]))
-        self.assertTrue(m > 35)
+        g = itertools.product(photometrics, compressions, tiled, modes)
+        for photometric, compression, tiled, mode in g:
+            with self.subTest(photometric=photometric,
+                              compression=compression,
+                              tiled=tiled,
+                              mode=mode):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                    t = TIFF(tfile.name, mode=mode)
+                    t['photometric'] = photometric
 
+                    w, h = expected.shape
+                    t['imagewidth'] = expected.shape[1]
+                    t['imagelength'] = expected.shape[0]
 
+                    t['bitspersample'] = 8
+                    t['samplesperpixel'] = 1
+                    if tiled:
+                        tw, th = int(w / 2), int(h / 2)
+                        t['tilelength'] = th
+                        t['tilewidth'] = tw
+                    else:
+                        rps = int(expected.shape[0] / 2)
+                        t['rowsperstrip'] = rps
+                    t['compression'] = compression
+
+                    t[:] = expected
+
+                    del t
+
+                    t = TIFF(tfile.name)
+                    self.assertEqual(t['photometric'], photometric)
+                    self.assertEqual(t['imagewidth'], w)
+                    self.assertEqual(t['imagelength'], h)
+                    self.assertEqual(t['bitspersample'], 8)
+                    self.assertEqual(t['samplesperpixel'], 1)
+                    if tiled:
+                        self.assertEqual(t['tilewidth'], tw)
+                        self.assertEqual(t['tilelength'], th)
+                    else:
+                        self.assertEqual(t['rowsperstrip'], rps)
+                    self.assertEqual(t['compression'], compression)
+
+                    actual = t[:]
+
+                np.testing.assert_equal(actual, expected)
