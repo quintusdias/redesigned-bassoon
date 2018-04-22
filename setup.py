@@ -1,8 +1,3 @@
-# Standard library imports ...
-import os
-import re
-import sys
-
 # Third party library imports ...
 from setuptools import setup
 

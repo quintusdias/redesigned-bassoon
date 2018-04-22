@@ -1,21 +1,200 @@
+import struct
+
 from . import lib
+from . import tags
+
 
 class TIFF(object):
-    def __init__(self, filename):
-        self.fp = lib.open(filename)
+    """
+    Attributes
+    ----------
+    datatype2fmt : dict
+        Map the TIFF entry datatype to something that can be used by the struct
+        module.
+    tagnum2name : dict
+        Map the tag number to a tag name.
+    """
+    tagnum2name = tags.tagnum2name
 
-        tags = {}
-        tags['width'] = lib.getField(self.fp, 'width')
-        tags['height'] = lib.getField(self.fp, 'length')
-        tags['sampleformat'] = lib.getFieldDefaulted(self.fp, 'sampleformat')
-        tags['bitspersample'] = lib.getFieldDefaulted(self.fp, 'bitspersample')
-        self.tags = tags
+    datatype2fmt = {1: ('B', 1),
+                    2: ('B', 1),
+                    3: ('H', 2),
+                    4: ('I', 4),
+                    5: ('II', 8),
+                    7: ('B', 1),
+                    9: ('i', 4),
+                    10: ('ii', 8),
+                    11: ('f', 4),
+                    12: ('d', 8)}
+
+    def __init__(self, filename, mode='r'):
+        self.tfp = lib.open(filename, mode=mode)
+
+        self.tags = {}
+
+        if 'w' in mode:
+            self.fp = None
+        else:
+            self.fp = open(filename, mode='rb')
+            self.parse_header()
+            self.parse_ifd()
+
+    def __del__(self):
+        """
+        Perform any needed resource clean-up.
+        """
+        # Close the Python file pointer.
+        if self.fp is not None:
+            self.fp.close()
+
+        # Close the TIFF file pointer.
+        lib.close(self.tfp)
+
+    def __setitem__(self, idx, value):
+        """
+        Set a tag value.
+        """
+        if idx in self.tagnum2name.values():
+
+            # Setting a TIFF tag...
+            lib.setField(self.tfp, idx, value)
+            self.tags[idx] = value
+
+        elif isinstance(idx, slice):
+            if idx.start is None and idx.step is None and idx.stop is None:
+                # Case of t[:] = ...
+                if lib.isTiled(self.tfp):
+                    # numtiles = lib.numberOfTiles(self.tfp)
+                    numtilerows = int(self['imagelength'] / self['tilelength'])
+                    numtilecols = int(self['imagewidth'] / self['tilewidth'])
+                    tilenum = -1
+                    for r in range(numtilerows):
+                        rslice = slice(r * self['tilelength'],
+                                       (r + 1) * self['tilelength'])
+                        for c in range(numtilecols):
+                            cslice = slice(c * self['tilewidth'],
+                                           (c + 1) * self['tilewidth'])
+                            tiledata = value[rslice, cslice].copy()
+                            tilenum += 1
+                            lib.writeEncodedTile(self.tfp, tilenum, tiledata)
+
+                else:
+                    msg = f"Strips with t[:] = ... is not handled"
+                    raise RuntimeError(msg)
+        else:
+            msg = f"Unhandled:  {idx}"
+            raise RuntimeError(msg)
 
     def __getitem__(self, idx):
         if isinstance(idx, slice):
             if idx.start is None and idx.stop is None and idx.step is None:
                 # case is [:]
-                img = lib.readRGBAImage(self.fp, width=self.tags['width'],
-                                        height=self.tags['height'])
+                img = lib.readRGBAImage(self.tfp,
+                                        width=self.tags['imagewidth'],
+                                        height=self.tags['imagelength'])
                 return img
+        elif isinstance(idx, str):
+            return self.tags[idx]
 
+    def parse_ifd(self):
+        """
+        Parse the TIFF for metadata.
+
+        Parameters
+        ----------
+        fp : file-like object
+            The TIFF file to read.
+        """
+        buffer = self.fp.read(2)
+        num_tags, = struct.unpack(f"{self.endian}H", buffer)
+
+        buffer = self.fp.read(num_tags * 12)
+
+        tags = {}
+        for idx in range(num_tags):
+            tag, value = self._process_entry(buffer[idx * 12:(idx + 1) * 12])
+            tags[tag] = value
+        self.tags = tags
+
+        buffer = self.fp.read(4)
+        self.next_offset, = struct.unpack(f"{self.endian}I", buffer)
+
+    def _process_entry(self, buffer):
+        """
+        Read an IFD entry from the buffer.
+
+        Returns
+        -------
+        tag, value
+        """
+        fmt = self.endian + 'HHII'
+        tag_num, dtype, count, offset = struct.unpack(fmt, buffer)
+
+        try:
+            fmt = self.datatype2fmt[dtype][0] * count
+            payload_size = self.datatype2fmt[dtype][1] * count
+        except KeyError:
+            msg = 'Invalid TIFF tag datatype ({dtype}).'
+            raise IOError(msg)
+
+        if payload_size <= 4:
+            # Interpret the payload from the 4 bytes in the tag entry.
+            target_buffer = buffer[8:8 + payload_size]
+        else:
+            # Interpret the payload at the offset specified by the 4 bytes in
+            # the tag entry.
+            orig = self.fp.tell()
+            self.fp.seek(offset)
+            target_buffer = self.fp.read(payload_size)
+            self.fp.seek(orig)
+
+        if dtype == 2:
+            # ASCII
+            payload = target_buffer.decode('utf-8').rstrip('\x00')
+
+        else:
+            payload = struct.unpack(self.endian + fmt, target_buffer)
+            if dtype == 5 or dtype == 10:
+                # Rational or Signed Rational.  Construct the list of values.
+                rational_payload = []
+                for j in range(count):
+                    value = float(payload[j * 2]) / float(payload[j * 2 + 1])
+                    rational_payload.append(value)
+                payload = rational_payload
+            if count == 1:
+                # If just a single value, then return a scalar instead of a
+                # tuple.
+                payload = payload[0]
+
+        tag_name = self.tagnum2name[tag_num]
+        return tag_name, payload
+
+    def parse_header(self):
+        """
+        Parse the TIFF header.
+
+        Parameters
+        ----------
+        fp : file-like object
+            The TIFF file to read.
+        """
+        buffer = self.fp.read(8)
+
+        # First 8 should be (73, 73, 42, 8) or (77, 77, 42, 8)
+        data = struct.unpack('BB', buffer[0:2])
+        if data[0] == 73 and data[1] == 73:
+            # little endian
+            self.endian = '<'
+        elif data[0] == 77 and data[1] == 77:
+            # big endian
+            self.endian = '>'
+        else:
+            msg = (
+                f"The byte order indication in the TIFF header "
+                f"({buffer[0:2]}) is invalid.  It should be either "
+                f"{bytes([73, 73])} or {bytes([77, 77])}."
+            )
+            raise IOError(msg)
+
+        _, offset = struct.unpack(self.endian + 'HI', buffer[2:8])
+        self.fp.seek(offset)
