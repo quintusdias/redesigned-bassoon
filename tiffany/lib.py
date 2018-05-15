@@ -182,6 +182,7 @@ def computeTile(fp, x, y, sample):
     tilenum = _LIB.TIFFComputeTile(fp, x, y, sample)
     return tilenum
 
+
 def readEncodedTile(fp, tilenum):
     """
     Corresponds to TIFFComputeTile
@@ -198,6 +199,7 @@ def readEncodedTile(fp, tilenum):
                                       image.ctypes.data_as(ctypes.c_void_p),
                                       -1)
     return image
+
 
 def getField(fp, tag):
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]

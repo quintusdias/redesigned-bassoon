@@ -103,7 +103,8 @@ class TIFF(object):
                     for col in range(0, width, twidth):
                         tilenum = lib.computeTile(self.tfp, col, row, 0)
                         cslice = slice(col, col + twidth)
-                        image[rslice, cslice] = lib.readEncodedTile(self.tfp, tilenum)
+                        tile = lib.readEncodedTile(self.tfp, tilenum)
+                        image[rslice, cslice] = tile
                 return image
             else:
                 msg = f"Strips with t[:] = ... is not handled"
