@@ -1,4 +1,5 @@
 # Local imports
+import itertools
 import tempfile
 import unittest
 
@@ -23,20 +24,30 @@ class TestSuite(unittest.TestCase):
         """
         Scenario: Write the scikit-image "camera" to file.
 
+        Expected Result:  The data should be round-trip the same for greyscale
+        photometric interpretations and lossless compression schemes.
         """
         expected = skimage.data.camera()
 
-        with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
-            t = TIFF(tfile.name, mode='w')
-            t['photometric'] = Photometric.MINISBLACK
-            t['imagewidth'] = expected.shape[1]
-            t['imagelength'] = expected.shape[0]
-            t['bitspersample'] = 8
-            t['samplesperpixel'] = 1
-            t['tilewidth'] = int(expected.shape[1] / 2)
-            t['tilelength'] = int(expected.shape[0] / 2)
-            t['compression'] = Compression.NONE
-            t[:] = expected
+        photometrics = (Photometric.MINISBLACK, Photometric.MINISWHITE)
+        compressions = (Compression.NONE, Compression.LZW,
+                        Compression.PACKBITS, Compression.DEFLATE,
+                        Compression.ADOBE_DEFLATE, Compression.LZMA)
 
-        actual = t[:]
-        np.testing.assert_equal(actual, expected)
+        for photometric, compression in itertools.product(photometrics,
+                                                          compressions):
+            with self.subTest(photometric=photometric, compression=compression):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                    t = TIFF(tfile.name, mode='w')
+                    t['photometric'] = photometric
+                    t['imagewidth'] = expected.shape[1]
+                    t['imagelength'] = expected.shape[0]
+                    t['bitspersample'] = 8
+                    t['samplesperpixel'] = 1
+                    t['tilewidth'] = int(expected.shape[1] / 2)
+                    t['tilelength'] = int(expected.shape[0] / 2)
+                    t['compression'] = compression
+                    t[:] = expected
+        
+                actual = t[:]
+                np.testing.assert_equal(actual, expected)
