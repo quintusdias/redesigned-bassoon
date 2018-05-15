@@ -1,5 +1,8 @@
 import struct
 
+# 3rd party libraries
+import numpy as np
+
 from . import lib
 from . import tags
 
@@ -86,7 +89,26 @@ class TIFF(object):
             raise RuntimeError(msg)
 
     def __getitem__(self, idx):
+        """
+        Either retrieve a named tag or read part/all of an image.
+        """
         if isinstance(idx, slice):
+            if lib.isTiled(self.tfp):
+                shape = (self['imagelength'], self['imagewidth'])
+                image = np.zeros(shape, dtype=np.uint8)
+                height, width = self['imagelength'], self['imagelength']
+                theight, twidth = self['tilelength'], self['tilelength']
+                for row in range(0, height, theight):
+                    rslice = slice(row, row + theight)
+                    for col in range(0, width, twidth):
+                        tilenum = lib.computeTile(self.tfp, col, row, 0)
+                        cslice = slice(col, col + twidth)
+                        image[rslice, cslice] = lib.readEncodedTile(self.tfp, tilenum)
+                return image
+            else:
+                msg = f"Strips with t[:] = ... is not handled"
+                raise RuntimeError(msg)
+
             if idx.start is None and idx.stop is None and idx.step is None:
                 # case is [:]
                 img = lib.readRGBAImage(self.tfp,

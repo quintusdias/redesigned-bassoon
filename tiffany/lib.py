@@ -171,6 +171,34 @@ def setField(fp, tag, value):
     return status
 
 
+def computeTile(fp, x, y, sample):
+    """
+    Corresponds to TIFFComputeTile
+    """
+    ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32,
+                ctypes.c_uint16]
+    _LIB.TIFFComputeTile.argtypes = ARGTYPES
+    _LIB.TIFFComputeTile.restype = ctypes.c_uint32
+    tilenum = _LIB.TIFFComputeTile(fp, x, y, sample)
+    return tilenum
+
+def readEncodedTile(fp, tilenum):
+    """
+    Corresponds to TIFFComputeTile
+    """
+    ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p,
+                ctypes.c_int32]
+    _LIB.TIFFReadEncodedTile.argtypes = ARGTYPES
+    _LIB.TIFFReadEncodedTile.restype = ctypes.c_int
+    tilelength = getField(fp, 'tilelength')
+    tilewidth = getField(fp, 'tilewidth')
+    shape = (tilelength, tilewidth)
+    image = np.zeros(shape, dtype=np.uint8)
+    status = _LIB.TIFFReadEncodedTile(fp, tilenum,
+                                      image.ctypes.data_as(ctypes.c_void_p),
+                                      -1)
+    return image
+
 def getField(fp, tag):
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
