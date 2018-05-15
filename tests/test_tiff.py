@@ -5,17 +5,12 @@ import unittest
 
 # Third party library imports
 import numpy as np
-import pkg_resources as pkg
 import skimage.data
 import skimage.measure
 
 # Local imports
-import tiffany
 from tiffany.tiffany import TIFF
-import tiffany.lib
-from tiffany.lib import (
-    Compression, Photometric, FillOrder, Orientation, PlanarConfig
-)
+from tiffany.lib import Compression, Photometric
 
 
 class TestSuite(unittest.TestCase):
@@ -36,7 +31,8 @@ class TestSuite(unittest.TestCase):
 
         for photometric, compression in itertools.product(photometrics,
                                                           compressions):
-            with self.subTest(photometric=photometric, compression=compression):
+            with self.subTest(photometric=photometric,
+                              compression=compression):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode='w')
                     t['photometric'] = photometric
@@ -48,6 +44,6 @@ class TestSuite(unittest.TestCase):
                     t['tilelength'] = int(expected.shape[0] / 2)
                     t['compression'] = compression
                     t[:] = expected
-        
+
                 actual = t[:]
                 np.testing.assert_equal(actual, expected)
