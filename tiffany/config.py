@@ -15,6 +15,8 @@ _macports_default_location = {'openjp2': '/opt/local/lib/libopenjp2.dylib',
 
 def load_library():
 
+    path = None
+
     if ((('Anaconda' in sys.version) or
          ('Continuum Analytics, Inc.' in sys.version) or
          ('packaged by conda-forge' in sys.version))):

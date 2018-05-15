@@ -3,7 +3,6 @@ import tempfile
 import unittest
 
 # Third party library imports
-import glymur
 import numpy as np
 import pkg_resources as pkg
 import skimage.data
@@ -71,22 +70,6 @@ class TestSuite(unittest.TestCase):
 
         bps = tiffany.lib.getFieldDefaulted(t.tfp, 'bitspersample')
         self.assertEqual(bps, t['BitsPerSample'][0])
-
-    def test_read_rgba(self):
-        """
-        SCENARIO:  read a full image in RGBA mode
-
-        EXPECTED RESULT:  The image dimensions are the same as that produced by
-        Glymur.
-        """
-        t = TIFF(tiffany.data.nemo)
-        im = t[:]
-
-        j = glymur.Jp2k(glymur.data.nemo())
-        jim = j[:]
-
-        m = skimage.measure.compare_psnr(jim, np.flipud(im[:, :, :3]))
-        self.assertTrue(m > 35)
 
     def test_write_camera(self):
         """
