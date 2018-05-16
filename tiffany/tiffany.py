@@ -53,9 +53,27 @@ class TIFF(object):
         # Close the TIFF file pointer.
         lib.close(self.tfp)
 
+    def _writeTiledImage(self, image):
+        """
+        Write an entire tiled image.
+        """
+        # numtiles = lib.numberOfTiles(self.tfp)
+        numtilerows = int(self['imagelength'] / self['tilelength'])
+        numtilecols = int(self['imagewidth'] / self['tilewidth'])
+        tilenum = -1
+        for r in range(numtilerows):
+            rslice = slice(r * self['tilelength'],
+                           (r + 1) * self['tilelength'])
+            for c in range(numtilecols):
+                cslice = slice(c * self['tilewidth'],
+                               (c + 1) * self['tilewidth'])
+                tile = image[rslice, cslice].copy()
+                tilenum += 1
+                lib.writeEncodedTile(self.tfp, tilenum, tile)
+
     def __setitem__(self, idx, value):
         """
-        Set a tag value.
+        Set a tag value or write part/all of an image.
         """
         if idx in self.tagnum2name.values():
 
@@ -67,20 +85,7 @@ class TIFF(object):
             if idx.start is None and idx.step is None and idx.stop is None:
                 # Case of t[:] = ...
                 if lib.isTiled(self.tfp):
-                    # numtiles = lib.numberOfTiles(self.tfp)
-                    numtilerows = int(self['imagelength'] / self['tilelength'])
-                    numtilecols = int(self['imagewidth'] / self['tilewidth'])
-                    tilenum = -1
-                    for r in range(numtilerows):
-                        rslice = slice(r * self['tilelength'],
-                                       (r + 1) * self['tilelength'])
-                        for c in range(numtilecols):
-                            cslice = slice(c * self['tilewidth'],
-                                           (c + 1) * self['tilewidth'])
-                            tiledata = value[rslice, cslice].copy()
-                            tilenum += 1
-                            lib.writeEncodedTile(self.tfp, tilenum, tiledata)
-
+                    self._writeTiledImage(value)
                 else:
                     msg = f"Strips with t[:] = ... is not handled"
                     raise RuntimeError(msg)
