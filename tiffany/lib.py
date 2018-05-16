@@ -7,47 +7,9 @@ import numpy as np
 
 # Local imports
 from . import config
+from .tags import TAGS
 
 _LIB = config.load_library()
-
-_TAGS = {
-    'bitspersample': {
-        'number': 258,
-        'type': ctypes.c_uint16,
-    },
-    'compression': {
-        'number': 259,
-        'type': ctypes.c_uint16,
-    },
-    'imagewidth': {
-        'number': 256,
-        'type': ctypes.c_uint32,
-    },
-    'imagelength': {
-        'number': 257,
-        'type': ctypes.c_uint32,
-    },
-    'photometric': {
-        'number': 262,
-        'type': ctypes.c_uint16,
-    },
-    'sampleformat': {
-        'number': 339,
-        'type': ctypes.c_uint16,
-    },
-    'samplesperpixel': {
-        'number': 277,
-        'type': ctypes.c_uint16,
-    },
-    'tilewidth': {
-        'number': 322,
-        'type': ctypes.c_uint32,
-    },
-    'tilelength': {
-        'number': 323,
-        'type': ctypes.c_uint32,
-    },
-}
 
 
 class Compression(IntEnum):
@@ -160,8 +122,8 @@ def setField(fp, tag, value):
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
     # Append the proper return type for the tag.
-    tag_num = _TAGS[tag]['number']
-    tag_type = _TAGS[tag]['type']
+    tag_num = TAGS[tag]['number']
+    tag_type = TAGS[tag]['type']
     ARGTYPES.append(tag_type)
     _LIB.TIFFSetField.argtypes = ARGTYPES
     _LIB.TIFFSetField.restype = ctypes.c_int
@@ -204,10 +166,10 @@ def readEncodedTile(fp, tilenum):
 def getField(fp, tag):
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
-    tag_num = _TAGS[tag]['number']
+    tag_num = TAGS[tag]['number']
 
     # Append the proper return type for the tag.
-    tag_type = _TAGS[tag]['type']
+    tag_type = TAGS[tag]['type']
     ARGTYPES.append(ctypes.POINTER(tag_type))
     _LIB.TIFFGetField.argtypes = ARGTYPES
 
@@ -222,11 +184,11 @@ def getField(fp, tag):
 def getFieldDefaulted(fp, tag):
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
-    tag_num = _TAGS[tag]['number']
+    tag_num = TAGS[tag]['number']
 
     # Append the proper return type for the tag.
-    tag_type = _TAGS[tag]['type']
-    ARGTYPES.append(ctypes.POINTER(_TAGS[tag]['type']))
+    tag_type = TAGS[tag]['type']
+    ARGTYPES.append(ctypes.POINTER(TAGS[tag]['type']))
     _LIB.TIFFGetFieldDefaulted.argtypes = ARGTYPES
 
     _LIB.TIFFGetFieldDefaulted.restype = ctypes.c_int

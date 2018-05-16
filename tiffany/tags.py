@@ -1,3 +1,45 @@
+# Standard library imports ...
+import ctypes
+
+TAGS = {
+    'bitspersample': {
+        'number': 258,
+        'type': ctypes.c_uint16,
+    },
+    'compression': {
+        'number': 259,
+        'type': ctypes.c_uint16,
+    },
+    'imagewidth': {
+        'number': 256,
+        'type': ctypes.c_uint32,
+    },
+    'imagelength': {
+        'number': 257,
+        'type': ctypes.c_uint32,
+    },
+    'photometric': {
+        'number': 262,
+        'type': ctypes.c_uint16,
+    },
+    'sampleformat': {
+        'number': 339,
+        'type': ctypes.c_uint16,
+    },
+    'samplesperpixel': {
+        'number': 277,
+        'type': ctypes.c_uint16,
+    },
+    'tilewidth': {
+        'number': 322,
+        'type': ctypes.c_uint32,
+    },
+    'tilelength': {
+        'number': 323,
+        'type': ctypes.c_uint32,
+    },
+}
+
 tagnum2name = {
     11: 'processingsoftware',
     254: 'newsubfiletype',
