@@ -30,6 +30,10 @@ TAGS = {
         'number': 277,
         'type': ctypes.c_uint16,
     },
+    'rowsperstrip': {
+        'number': 278,
+        'type': ctypes.c_uint16,
+    },
     'tilewidth': {
         'number': 322,
         'type': ctypes.c_uint32,

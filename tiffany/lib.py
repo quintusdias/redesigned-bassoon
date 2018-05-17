@@ -251,6 +251,19 @@ def readRGBAImage(fp, width=None, height=None,
     return img
 
 
+def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
+    """
+    Corresponds to TIFFWriteEncodedStrip.
+    """
+    ARGTYPES = [
+        ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32
+    ]
+    _LIB.TIFFWriteEncodedStrip.argtypes = ARGTYPES
+    _LIB.TIFFWriteEncodedStrip.restype = ctypes.c_int
+    raster = stripdata.ctypes.data_as(ctypes.c_void_p)
+    status = _LIB.TIFFWriteEncodedStrip(fp, stripnum, raster, size)
+
+
 def writeEncodedTile(fp, tilenum, tiledata, size=-1):
     """
     Corresponds to TIFFWriteEncodedTile.

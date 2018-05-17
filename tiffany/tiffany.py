@@ -53,6 +53,19 @@ class TIFF(object):
         # Close the TIFF file pointer.
         lib.close(self.tfp)
 
+    def _writeStrippedImage(self, image):
+        """
+        Write an entire stripped image.
+        """
+        numstrips = int(self['imagelength'] / self['rowsperstrip'])
+        stripnum = -1
+        for r in range(numstrips):
+                rslice = slice(r * self['rowsperstrip'],
+                               (r + 1) * self['rowsperstrip'])
+                strip = image[rslice, :].copy()
+                stripnum += 1
+                lib.writeEncodedStrip(self.tfp, stripnum, strip)
+
     def _writeTiledImage(self, image):
         """
         Write an entire tiled image.
@@ -87,8 +100,7 @@ class TIFF(object):
                 if lib.isTiled(self.tfp):
                     self._writeTiledImage(value)
                 else:
-                    msg = f"Strips with t[:] = ... is not handled"
-                    raise RuntimeError(msg)
+                    self._writeStrippedImage(value)
         else:
             msg = f"Unhandled:  {idx}"
             raise RuntimeError(msg)

@@ -28,11 +28,14 @@ class TestSuite(unittest.TestCase):
         compressions = (Compression.NONE, Compression.LZW,
                         Compression.PACKBITS, Compression.DEFLATE,
                         Compression.ADOBE_DEFLATE, Compression.LZMA)
+        tiled = (True, False)
 
-        for photometric, compression in itertools.product(photometrics,
-                                                          compressions):
+        for photometric, compression, tiled in itertools.product(photometrics,
+                                                                 compressions,
+                                                                 tiled):
             with self.subTest(photometric=photometric,
-                              compression=compression):
+                              compression=compression,
+                              tiled=tiled):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode='w')
                     t['photometric'] = photometric
@@ -40,8 +43,11 @@ class TestSuite(unittest.TestCase):
                     t['imagelength'] = expected.shape[0]
                     t['bitspersample'] = 8
                     t['samplesperpixel'] = 1
-                    t['tilewidth'] = int(expected.shape[1] / 2)
-                    t['tilelength'] = int(expected.shape[0] / 2)
+                    if tiled:
+                        t['tilewidth'] = int(expected.shape[1] / 2)
+                        t['tilelength'] = int(expected.shape[0] / 2)
+                    else:
+                        t['rowsperstrip'] = int(expected.shape[0] / 2)
                     t['compression'] = compression
                     t[:] = expected
 
