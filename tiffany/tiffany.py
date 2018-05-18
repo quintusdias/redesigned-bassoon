@@ -64,7 +64,7 @@ class TIFF(object):
                                (r + 1) * self['rowsperstrip'])
                 strip = image[rslice, :].copy()
                 stripnum += 1
-                lib.writeEncodedStrip(self.tfp, stripnum, strip)
+                lib.writeEncodedStrip(self.tfp, stripnum, strip, size=image.nbytes)
 
     def _writeTiledImage(self, image):
         """
@@ -105,27 +105,44 @@ class TIFF(object):
             msg = f"Unhandled:  {idx}"
             raise RuntimeError(msg)
 
+    def _readStrippedImage(self, idx):
+        """
+        Read entire image where the orientation is stripped.
+        """
+        shape = (self['imagelength'], self['imagewidth'])
+        image = np.zeros(shape, dtype=np.uint8)
+        height, width = self['imagelength'], self['imagewidth']
+        stripheight = self['rowsperstrip']
+        for row in range(0, height, stripheight):
+            rslice = slice(row, row + stripheight)
+            stripnum = lib.computeStrip(self.tfp, row, 0)
+            strip = lib.readEncodedStrip(self.tfp, stripnum)
+            image[rslice, :] = strip
+        return image
+
+    def _readTiledImage(self, idx):
+        shape = (self['imagelength'], self['imagewidth'])
+        image = np.zeros(shape, dtype=np.uint8)
+        height, width = self['imagelength'], self['imagewidth']
+        theight, twidth = self['tilelength'], self['tilewidth']
+        for row in range(0, height, theight):
+            rslice = slice(row, row + theight)
+            for col in range(0, width, twidth):
+                tilenum = lib.computeTile(self.tfp, col, row, 0)
+                cslice = slice(col, col + twidth)
+                tile = lib.readEncodedTile(self.tfp, tilenum)
+                image[rslice, cslice] = tile
+        return image
+
     def __getitem__(self, idx):
         """
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
             if lib.isTiled(self.tfp):
-                shape = (self['imagelength'], self['imagewidth'])
-                image = np.zeros(shape, dtype=np.uint8)
-                height, width = self['imagelength'], self['imagelength']
-                theight, twidth = self['tilelength'], self['tilelength']
-                for row in range(0, height, theight):
-                    rslice = slice(row, row + theight)
-                    for col in range(0, width, twidth):
-                        tilenum = lib.computeTile(self.tfp, col, row, 0)
-                        cslice = slice(col, col + twidth)
-                        tile = lib.readEncodedTile(self.tfp, tilenum)
-                        image[rslice, cslice] = tile
-                return image
+                return self._readTiledImage(slice)
             else:
-                msg = f"Strips with t[:] = ... is not handled"
-                raise RuntimeError(msg)
+                return self._readStrippedImage(slice)
 
             if idx.start is None and idx.stop is None and idx.step is None:
                 # case is [:]
