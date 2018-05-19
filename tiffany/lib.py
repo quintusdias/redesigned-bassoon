@@ -126,11 +126,10 @@ def setField(fp, tag, value):
     tag_type = TAGS[tag]['type']
     ARGTYPES.append(tag_type)
     _LIB.TIFFSetField.argtypes = ARGTYPES
-    _LIB.TIFFSetField.restype = ctypes.c_int
+    _LIB.TIFFSetField.restype = check_error
 
     # instantiate the tag value
-    status = _LIB.TIFFSetField(fp, tag_num, value)
-    return status
+    _LIB.TIFFSetField(fp, tag_num, value)
 
 
 def computeStrip(fp, row, sample):
@@ -162,14 +161,13 @@ def readEncodedStrip(fp, stripnum):
     """
     ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_int32]
     _LIB.TIFFReadEncodedStrip.argtypes = ARGTYPES
-    _LIB.TIFFReadEncodedStrip.restype = ctypes.c_int
+    _LIB.TIFFReadEncodedStrip.restype = check_error
     rps = getField(fp, 'rowsperstrip')
     width = getField(fp, 'imagewidth')
     shape = (rps, width)
     image = np.zeros(shape, dtype=np.uint8)
-    status = _LIB.TIFFReadEncodedStrip(fp, stripnum,
-                                      image.ctypes.data_as(ctypes.c_void_p),
-                                      -1)
+    _LIB.TIFFReadEncodedStrip(fp, stripnum,
+                              image.ctypes.data_as(ctypes.c_void_p), -1)
     return image
 
 
@@ -180,14 +178,13 @@ def readEncodedTile(fp, tilenum):
     ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p,
                 ctypes.c_int32]
     _LIB.TIFFReadEncodedTile.argtypes = ARGTYPES
-    _LIB.TIFFReadEncodedTile.restype = ctypes.c_int
+    _LIB.TIFFReadEncodedTile.restype = check_error
     tilelength = getField(fp, 'tilelength')
     tilewidth = getField(fp, 'tilewidth')
     shape = (tilelength, tilewidth)
     image = np.zeros(shape, dtype=np.uint8)
-    status = _LIB.TIFFReadEncodedTile(fp, tilenum,
-                                      image.ctypes.data_as(ctypes.c_void_p),
-                                      -1)
+    _LIB.TIFFReadEncodedTile(fp, tilenum,
+                             image.ctypes.data_as(ctypes.c_void_p), -1)
     return image
 
 
@@ -201,11 +198,11 @@ def getField(fp, tag):
     ARGTYPES.append(ctypes.POINTER(tag_type))
     _LIB.TIFFGetField.argtypes = ARGTYPES
 
-    _LIB.TIFFGetField.restype = ctypes.c_int
+    _LIB.TIFFGetField.restype = check_error
 
     # instantiate the tag value
     item = tag_type()
-    status = _LIB.TIFFGetField(fp, tag_num, ctypes.byref(item))
+    _LIB.TIFFGetField(fp, tag_num, ctypes.byref(item))
     return item.value
 
 
@@ -219,11 +216,11 @@ def getFieldDefaulted(fp, tag):
     ARGTYPES.append(ctypes.POINTER(TAGS[tag]['type']))
     _LIB.TIFFGetFieldDefaulted.argtypes = ARGTYPES
 
-    _LIB.TIFFGetFieldDefaulted.restype = ctypes.c_int
+    _LIB.TIFFGetFieldDefaulted.restype = check_error
 
     # instantiate the tag value
     item = tag_type()
-    status = _LIB.TIFFGetFieldDefaulted(fp, tag_num, ctypes.byref(item))
+    _LIB.TIFFGetFieldDefaulted(fp, tag_num, ctypes.byref(item))
     return item.value
 
 
@@ -270,12 +267,11 @@ def readRGBAImage(fp, width=None, height=None,
     ]
 
     _LIB.TIFFReadRGBAImage.argtypes = ARGTYPES
-    _LIB.TIFFReadRGBAImage.restype = ctypes.c_int
+    _LIB.TIFFReadRGBAImage.restype = check_error
 
     img = np.zeros((height, width, 4), dtype=np.uint8)
     raster = img.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
-    status = _LIB.TIFFReadRGBAImage(fp, width, height, raster,
-                                    3, stopOnError)
+    _LIB.TIFFReadRGBAImage(fp, width, height, raster, 3, stopOnError)
     return img
 
 
@@ -289,7 +285,7 @@ def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
     _LIB.TIFFWriteEncodedStrip.argtypes = ARGTYPES
     _LIB.TIFFWriteEncodedStrip.restype = ctypes.c_int
     raster = stripdata.ctypes.data_as(ctypes.c_void_p)
-    status = _LIB.TIFFWriteEncodedStrip(fp, stripnum, raster, size)
+    _LIB.TIFFWriteEncodedStrip(fp, stripnum, raster, size)
 
 
 def writeEncodedTile(fp, tilenum, tiledata, size=-1):
@@ -300,9 +296,9 @@ def writeEncodedTile(fp, tilenum, tiledata, size=-1):
         ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32
     ]
     _LIB.TIFFWriteEncodedTile.argtypes = ARGTYPES
-    _LIB.TIFFWriteEncodedTile.restype = ctypes.c_int
+    _LIB.TIFFWriteEncodedTile.restype = check_error
     raster = tiledata.ctypes.data_as(ctypes.c_void_p)
-    status = _LIB.TIFFWriteEncodedTile(fp, tilenum, raster, size)
+    _LIB.TIFFWriteEncodedTile(fp, tilenum, raster, size)
 
 
 def check_error(status):
@@ -312,5 +308,5 @@ def check_error(status):
     for error status in each wrapping function and an exception will always be
     appropriately raised.
     """
-    if status == 1:
+    if status == 0:
         raise RuntimeError('failed')
