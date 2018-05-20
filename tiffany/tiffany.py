@@ -131,7 +131,12 @@ class TIFF(object):
         return image
 
     def _readTiledImage(self, idx):
-        shape = self['imagelength'], self['imagewidth'], self['samplesperpixel']
+        """
+        Helper routine for assembling an entire image out of tiles.
+        """
+        shape = (
+            self['imagelength'], self['imagewidth'], self['samplesperpixel']
+        )
         image = np.zeros(shape, dtype=np.uint8)
         height, width = self['imagelength'], self['imagewidth']
         theight, twidth = self['tilelength'], self['tilewidth']

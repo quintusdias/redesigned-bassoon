@@ -46,6 +46,10 @@ TAGS = {
         'number': 339,
         'type': ctypes.c_uint16,
     },
+    'jpegtables': {
+        'number': 347,
+        'type': None,
+    },
     'samplesperpixel': {
         'number': 277,
         'type': ctypes.c_uint16,
@@ -61,6 +65,15 @@ TAGS = {
     'tilelength': {
         'number': 323,
         'type': ctypes.c_uint32,
+    },
+    'ycbcrsubsampling': {
+        'number': 530,
+        'type': (ctypes.c_uint16, ctypes.c_uint16),
+    },
+    'referenceblackwhite': {
+        'number': 532,
+        'type': (ctypes.c_float, ctypes.c_float, ctypes.c_float,
+                 ctypes.c_float, ctypes.c_float, ctypes.c_float),
     },
 }
 
