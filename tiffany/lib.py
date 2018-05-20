@@ -84,6 +84,14 @@ class Photometric(IntEnum):
     LOGLUV = 32845  # Log2(L) (u',v')
 
 
+class JPEGColorMode(IntEnum):
+    """
+    Corresponds to TIFFTAG_JPEGCOLORMODE values listed in tiff.h
+    """
+    RAW = 0
+    RGB = 1
+
+
 class PlanarConfig(IntEnum):
     """
     Corresponds to TIFFTAG_PLANARCONFIG* values listed in tiff.h
@@ -124,12 +132,18 @@ def setField(fp, tag, value):
     # Append the proper return type for the tag.
     tag_num = TAGS[tag]['number']
     tag_type = TAGS[tag]['type']
-    ARGTYPES.append(tag_type)
+    if tag_num == 530:
+        ARGTYPES.extend(tag_type)
+    else:
+        ARGTYPES.append(tag_type)
     _LIB.TIFFSetField.argtypes = ARGTYPES
     _LIB.TIFFSetField.restype = check_error
 
     # instantiate the tag value
-    _LIB.TIFFSetField(fp, tag_num, value)
+    if tag_num == 530:
+        _LIB.TIFFSetField(fp, tag_num, value[0], value[1])
+    else:
+        _LIB.TIFFSetField(fp, tag_num, value)
 
 
 def computeStrip(fp, row, sample):

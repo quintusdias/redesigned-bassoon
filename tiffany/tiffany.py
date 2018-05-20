@@ -7,6 +7,14 @@ from . import lib
 from . import tags
 
 
+class JPEGColorModeRawError(RuntimeError):
+    """
+    Raise this exception if an attempt is made to write YCbCr/JPEG images with
+    JPEGCOLORMODERAW instead of JPEGCOLORMODERGB.
+    """
+    pass
+
+
 class TIFF(object):
     """
     Attributes
@@ -85,7 +93,7 @@ class TIFF(object):
                                (c + 1) * self['tilewidth'])
                 tile = image[rslice, cslice].copy()
                 tilenum += 1
-                lib.writeEncodedTile(self.tfp, tilenum, tile)
+                lib.writeEncodedTile(self.tfp, tilenum, tile, size=tile.nbytes)
 
     def __setitem__(self, idx, value):
         """
@@ -98,6 +106,16 @@ class TIFF(object):
             self.tags[idx] = value
 
         elif isinstance(idx, slice):
+            if (((self['photometric'] == lib.Photometric.YCBCR) and
+                 (self['compression'] == lib.Compression.JPEG) and
+                 (self['jpegcolormode'] == lib.JPEGColorMode.RAW))):
+                msg = (
+                    "You must set the jpegcolormode tag to "
+                    "JPEGColorMode.RGB in order to write to a YCbCr/JPEG "
+                    "image."
+                )
+                raise JPEGColorModeRawError(msg)
+
             if idx.start is None and idx.step is None and idx.stop is None:
                 # Case of t[:] = ...
                 if lib.isTiled(self.tfp):
@@ -131,7 +149,12 @@ class TIFF(object):
         return image
 
     def _readTiledImage(self, idx):
-        shape = self['imagelength'], self['imagewidth'], self['samplesperpixel']
+        """
+        Helper routine for assembling an entire image out of tiles.
+        """
+        shape = (
+            self['imagelength'], self['imagewidth'], self['samplesperpixel']
+        )
         image = np.zeros(shape, dtype=np.uint8)
         height, width = self['imagelength'], self['imagewidth']
         theight, twidth = self['tilelength'], self['tilewidth']
@@ -166,6 +189,9 @@ class TIFF(object):
                                         height=self.tags['imagelength'])
                 return img
         elif isinstance(idx, str):
+            if idx == 'jpegcolormode':
+                # This is a pseudo-tag that the user might not have set.
+                return lib.getFieldDefaulted(self.tfp, 'jpegcolormode')
             return self.tags[idx]
 
     def parse_ifd(self):
