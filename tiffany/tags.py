@@ -30,6 +30,10 @@ TAGS = {
         'number': 279,
         'type': None,
     },
+    'planarconfig': {
+        'number': 284,
+        'type': ctypes.c_uint16,
+    },
     'tileoffsets': {
         'number': 324,
         'type': None,

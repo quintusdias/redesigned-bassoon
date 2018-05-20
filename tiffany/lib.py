@@ -166,7 +166,8 @@ def readEncodedStrip(fp, stripnum):
     _LIB.TIFFReadEncodedStrip.restype = check_error
     rps = getField(fp, 'rowsperstrip')
     width = getField(fp, 'imagewidth')
-    shape = (rps, width)
+    spp = getField(fp, 'samplesperpixel')
+    shape = (rps, width, spp)
     image = np.zeros(shape, dtype=np.uint8)
     _LIB.TIFFReadEncodedStrip(fp, stripnum,
                               image.ctypes.data_as(ctypes.c_void_p), -1)
@@ -183,7 +184,8 @@ def readEncodedTile(fp, tilenum):
     _LIB.TIFFReadEncodedTile.restype = check_error
     tilelength = getField(fp, 'tilelength')
     tilewidth = getField(fp, 'tilewidth')
-    shape = (tilelength, tilewidth)
+    spp = getField(fp, 'samplesperpixel')
+    shape = (tilelength, tilewidth, spp)
     image = np.zeros(shape, dtype=np.uint8)
     _LIB.TIFFReadEncodedTile(fp, tilenum,
                              image.ctypes.data_as(ctypes.c_void_p), -1)

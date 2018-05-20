@@ -67,7 +67,7 @@ class TIFF(object):
                            (r + 1) * self['rowsperstrip'])
             strip = image[rslice, :].copy()
             stripnum += 1
-            lib.writeEncodedStrip(self.tfp, stripnum, strip, size=image.nbytes)
+            lib.writeEncodedStrip(self.tfp, stripnum, strip, size=strip.nbytes)
 
     def _writeTiledImage(self, image):
         """
@@ -112,7 +112,9 @@ class TIFF(object):
         """
         Read entire image where the orientation is stripped.
         """
-        shape = (self['imagelength'], self['imagewidth'])
+        shape = (
+            self['imagelength'], self['imagewidth'], self['samplesperpixel']
+        )
         image = np.zeros(shape, dtype=np.uint8)
         height = self['imagelength']
         stripheight = self['rowsperstrip']
@@ -120,11 +122,16 @@ class TIFF(object):
             rslice = slice(row, row + stripheight)
             stripnum = lib.computeStrip(self.tfp, row, 0)
             strip = lib.readEncodedStrip(self.tfp, stripnum)
-            image[rslice, :] = strip
+            image[rslice, :, :] = strip
+
+        if self['samplesperpixel'] == 1:
+            # squash the trailing dimension of 1.
+            image = np.squeeze(image)
+
         return image
 
     def _readTiledImage(self, idx):
-        shape = (self['imagelength'], self['imagewidth'])
+        shape = self['imagelength'], self['imagewidth'], self['samplesperpixel']
         image = np.zeros(shape, dtype=np.uint8)
         height, width = self['imagelength'], self['imagewidth']
         theight, twidth = self['tilelength'], self['tilewidth']
@@ -134,7 +141,12 @@ class TIFF(object):
                 tilenum = lib.computeTile(self.tfp, col, row, 0)
                 cslice = slice(col, col + twidth)
                 tile = lib.readEncodedTile(self.tfp, tilenum)
-                image[rslice, cslice] = tile
+                image[rslice, cslice, :] = tile
+
+        if self['samplesperpixel'] == 1:
+            # squash the trailing dimension of 1.
+            image = np.squeeze(image)
+
         return image
 
     def __getitem__(self, idx):
