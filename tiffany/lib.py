@@ -84,6 +84,14 @@ class Photometric(IntEnum):
     LOGLUV = 32845  # Log2(L) (u',v')
 
 
+class JPEGColorMode(IntEnum):
+    """
+    Corresponds to TIFFTAG_JPEGCOLORMODE values listed in tiff.h
+    """
+    RAW = 0
+    RGB = 1
+
+
 class PlanarConfig(IntEnum):
     """
     Corresponds to TIFFTAG_PLANARCONFIG* values listed in tiff.h

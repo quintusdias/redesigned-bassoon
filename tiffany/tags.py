@@ -26,6 +26,14 @@ TAGS = {
         'number': 273,
         'type': (ctypes.c_uint32, ctypes.c_uint64),
     },
+    'samplesperpixel': {
+        'number': 277,
+        'type': ctypes.c_uint16,
+    },
+    'rowsperstrip': {
+        'number': 278,
+        'type': ctypes.c_uint16,
+    },
     'stripbytecounts': {
         'number': 279,
         'type': None,
@@ -33,6 +41,14 @@ TAGS = {
     'planarconfig': {
         'number': 284,
         'type': ctypes.c_uint16,
+    },
+    'tilewidth': {
+        'number': 322,
+        'type': ctypes.c_uint32,
+    },
+    'tilelength': {
+        'number': 323,
+        'type': ctypes.c_uint32,
     },
     'tileoffsets': {
         'number': 324,
@@ -50,22 +66,6 @@ TAGS = {
         'number': 347,
         'type': None,
     },
-    'samplesperpixel': {
-        'number': 277,
-        'type': ctypes.c_uint16,
-    },
-    'rowsperstrip': {
-        'number': 278,
-        'type': ctypes.c_uint16,
-    },
-    'tilewidth': {
-        'number': 322,
-        'type': ctypes.c_uint32,
-    },
-    'tilelength': {
-        'number': 323,
-        'type': ctypes.c_uint32,
-    },
     'ycbcrsubsampling': {
         'number': 530,
         'type': (ctypes.c_uint16, ctypes.c_uint16),
@@ -74,6 +74,10 @@ TAGS = {
         'number': 532,
         'type': (ctypes.c_float, ctypes.c_float, ctypes.c_float,
                  ctypes.c_float, ctypes.c_float, ctypes.c_float),
+    },
+    'jpegcolormode': {
+        'number': 65538,
+        'type': ctypes.c_int32,
     },
 }
 
