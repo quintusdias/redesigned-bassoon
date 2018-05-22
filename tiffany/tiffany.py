@@ -214,9 +214,7 @@ class TIFF(object):
             if self['compression'] == lib.Compression.OJPEG:
                 if idx.start is None and idx.stop is None and idx.step is None:
                     # case is [:]
-                    img = lib.readRGBAImage(self.tfp,
-                                            width=self.tags['imagewidth'],
-                                            height=self.tags['imagelength'])
+                    img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
                     img = img[:, :, :3]
                     return img
             elif lib.isTiled(self.tfp):

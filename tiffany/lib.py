@@ -284,8 +284,8 @@ def numberOfTiles(fp):
     return numtiles
 
 
-def readRGBAImage(fp, width=None, height=None,
-                  orientation=Orientation.TOPLEFT, stopOnError=0):
+def readRGBAImageOriented(fp, width=None, height=None,
+                          orientation=Orientation.TOPLEFT, stopOnError=0):
     """
     Corresponds to TIFFReadRGBAImage
 
@@ -301,12 +301,13 @@ def readRGBAImage(fp, width=None, height=None,
         ctypes.POINTER(ctypes.c_uint32), ctypes.c_int32, ctypes.c_int32
     ]
 
-    _LIB.TIFFReadRGBAImage.argtypes = ARGTYPES
-    _LIB.TIFFReadRGBAImage.restype = check_error
+    _LIB.TIFFReadRGBAImageOriented.argtypes = ARGTYPES
+    _LIB.TIFFReadRGBAImageOriented.restype = check_error
 
     img = np.zeros((height, width, 4), dtype=np.uint8)
     raster = img.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
-    _LIB.TIFFReadRGBAImage(fp, width, height, raster, orientation, stopOnError)
+    _LIB.TIFFReadRGBAImageOriented(fp, width, height, raster, orientation,
+                                   stopOnError)
     return img
 
 
