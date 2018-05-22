@@ -38,8 +38,20 @@ TAGS = {
         'number': 279,
         'type': None,
     },
+    'xresolution': {
+        'number': 282,
+        'type': ctypes.c_float,
+    },
+    'yresolution': {
+        'number': 283,
+        'type': ctypes.c_float,
+    },
     'planarconfig': {
         'number': 284,
+        'type': ctypes.c_uint16,
+    },
+    'resolutionunit': {
+        'number': 296,
         'type': ctypes.c_uint16,
     },
     'tilewidth': {
@@ -65,6 +77,26 @@ TAGS = {
     'jpegtables': {
         'number': 347,
         'type': None,
+    },
+    'jpegproc': {
+        'number': 512,
+        'type': None,
+    },
+    'jpegqtables': {
+        'number': 519,
+        'type': None,
+    },
+    'jpegdctables': {
+        'number': 520,
+        'type': None,
+    },
+    'jpegactables': {
+        'number': 521,
+        'type': None,
+    },
+    'ycbcrcoefficients': {
+        'number': 529,
+        'type': (ctypes.c_float, ctypes.c_float, ctypes.c_float),
     },
     'ycbcrsubsampling': {
         'number': 530,

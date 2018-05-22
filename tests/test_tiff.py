@@ -1,5 +1,6 @@
 # Local imports
 import itertools
+import pathlib
 import tempfile
 import unittest
 
@@ -19,8 +20,8 @@ class TestSuite(unittest.TestCase):
         """
         Return full path of a test file.
         """
-        path = pathlib.Path(__name__)
-        return path / 'data', filename
+        directory = pathlib.Path(__file__).parent
+        return directory / 'data' / filename
 
     def test_read_ojpeg(self):
         """
@@ -29,7 +30,7 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The tags match the output of TIFFDUMP.  The image
         size matches the tag values.
         """
-        path = self._get_path('zackthecat.tiff')
+        path = self._get_path('zackthecat.tif')
 
         t = TIFF(path)
         t['jpegcolormode'] = JPEGColorMode.RGB

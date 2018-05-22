@@ -41,15 +41,16 @@ class TIFF(object):
                     12: ('d', 8),
                     16: ('Q', 8)}
 
-    def __init__(self, filename, mode='r'):
-        self.tfp = lib.open(filename, mode=mode)
+    def __init__(self, path, mode='r'):
+        self.path = path
+        self.tfp = lib.open(str(path), mode=mode)
 
         self.tags = {}
 
         if 'w' in mode:
             self.fp = None
         else:
-            self.fp = open(filename, mode='rb')
+            self.fp = self.path.open(mode='rb')
             self.parse_header()
             self.parse_ifd()
 
