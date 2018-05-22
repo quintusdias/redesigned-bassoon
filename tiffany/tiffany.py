@@ -1,3 +1,4 @@
+import pathlib
 import struct
 
 # 3rd party libraries
@@ -41,17 +42,50 @@ class TIFF(object):
                     12: ('d', 8),
                     16: ('Q', 8)}
 
-    def __init__(self, filename, mode='r'):
-        self.tfp = lib.open(filename, mode=mode)
+    def __init__(self, path, mode='r'):
+        """
+        Parameters
+        ----------
+        path : path or string
+            Path to TIFF file
+        mode : str
+            File access mode.
+        """
+        if isinstance(path, str):
+            self.path = pathlib.Path(path)
+        else:
+            self.path = path
+        self.tfp = lib.open(str(path), mode=mode)
 
         self.tags = {}
 
         if 'w' in mode:
             self.fp = None
         else:
-            self.fp = open(filename, mode='rb')
+            self.fp = self.path.open(mode='rb')
             self.parse_header()
             self.parse_ifd()
+
+    @property
+    def h(self):
+        """
+        Shortcut for the image height.
+        """
+        return self['imagelength']
+
+    @property
+    def w(self):
+        """
+        Shortcut for the image width.
+        """
+        return self['imagewidth']
+
+    @property
+    def spp(self):
+        """
+        Shortcut for the image depth
+        """
+        return self['samplesperpixel']
 
     def __del__(self):
         """
@@ -177,17 +211,19 @@ class TIFF(object):
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
-            if lib.isTiled(self.tfp):
+            if self['compression'] == lib.Compression.OJPEG:
+                if idx.start is None and idx.stop is None and idx.step is None:
+                    # case is [:]
+                    img = lib.readRGBAImage(self.tfp,
+                                            width=self.tags['imagewidth'],
+                                            height=self.tags['imagelength'])
+                    img = img[:, :, :3]
+                    return img
+            elif lib.isTiled(self.tfp):
                 return self._readTiledImage(slice)
             else:
                 return self._readStrippedImage(slice)
 
-            if idx.start is None and idx.stop is None and idx.step is None:
-                # case is [:]
-                img = lib.readRGBAImage(self.tfp,
-                                        width=self.tags['imagewidth'],
-                                        height=self.tags['imagelength'])
-                return img
         elif isinstance(idx, str):
             if idx == 'jpegcolormode':
                 # This is a pseudo-tag that the user might not have set.
