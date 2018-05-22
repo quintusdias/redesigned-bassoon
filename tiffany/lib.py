@@ -92,6 +92,14 @@ class JPEGColorMode(IntEnum):
     RGB = 1
 
 
+class JPEGProc(IntEnum):
+    """
+    Corresponds to JPEGPROC* values listed in tiff.h
+    """
+    BASELINE = 1
+    LOSSLESS = 14
+
+
 class PlanarConfig(IntEnum):
     """
     Corresponds to TIFFTAG_PLANARCONFIG* values listed in tiff.h
@@ -99,6 +107,14 @@ class PlanarConfig(IntEnum):
     CONTIG = 1  # single image plane
     SEPARATE = 2  # separate planes of data
 
+
+class ResolutionUnit(IntEnum):
+    """
+    Corresponds to RESUNIT* values listed in tiff.h
+    """
+    NONE = 1
+    INCH = 2
+    CENTIMETER = 3
 
 def close(fp):
     """
@@ -289,7 +305,7 @@ def readRGBAImage(fp, width=None, height=None,
 
     img = np.zeros((height, width, 4), dtype=np.uint8)
     raster = img.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
-    _LIB.TIFFReadRGBAImage(fp, width, height, raster, 3, stopOnError)
+    _LIB.TIFFReadRGBAImage(fp, width, height, raster, orientation, stopOnError)
     return img
 
 

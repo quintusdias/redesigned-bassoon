@@ -11,7 +11,10 @@ import skimage.measure
 
 # Local imports
 from tiffany.tiffany import TIFF, JPEGColorModeRawError
-from tiffany.lib import Compression, Photometric, PlanarConfig, JPEGColorMode
+from tiffany.lib import (
+    Compression, JPEGProc, Photometric, PlanarConfig, JPEGColorMode,
+    ResolutionUnit
+)
 
 
 class TestSuite(unittest.TestCase):
@@ -33,21 +36,21 @@ class TestSuite(unittest.TestCase):
         path = self._get_path('zackthecat.tif')
 
         t = TIFF(path)
-        t['jpegcolormode'] = JPEGColorMode.RGB
         image = t[:]
 
         self.assertEqual(image.shape, (t.h, t.w, t.spp))
 
-        self.assertEqual(t['bitspersample'], 8)
+        self.assertEqual(t['bitspersample'], (8, 8, 8))
         self.assertEqual(t['compression'], Compression.OJPEG)
         self.assertEqual(t['photometric'], Photometric.YCBCR)
         self.assertEqual(t['xresolution'], 75.0)
         self.assertEqual(t['yresolution'], 75.0)
         self.assertEqual(t['planarconfig'], PlanarConfig.CONTIG)
-        self.assertEqual(t['resolutionunit'], ResolutionUnit.NONE)
+        self.assertEqual(t['resolutionunit'], ResolutionUnit.INCH)
         self.assertEqual(t['tilewidth'], 240)
         self.assertEqual(t['tilelength'], 224)
         self.assertEqual(t['jpegproc'], JPEGProc.BASELINE)
+
         self.assertEqual(t['jpegqtables'], (7364, 7428, 7492))
         self.assertEqual(t['jpegdctables'], (7568, 7596, 7624))
         self.assertEqual(t['jpegactables'], (7664, 7842, 8020))
