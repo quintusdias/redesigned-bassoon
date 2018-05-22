@@ -15,6 +15,45 @@ from tiffany.lib import Compression, Photometric, PlanarConfig, JPEGColorMode
 
 class TestSuite(unittest.TestCase):
 
+    def _get_path(self, filename):
+        """
+        Return full path of a test file.
+        """
+        path = pathlib.Path(__name__)
+        return path / 'data', filename
+
+    def test_read_ojpeg(self):
+        """
+        Scenario: Read a TIFF with OJPEG compression.
+
+        Expected Result:  The tags match the output of TIFFDUMP.  The image
+        size matches the tag values.
+        """
+        path = self._get_path('zackthecat.tiff')
+
+        t = TIFF(path)
+        t['jpegcolormode'] = JPEGColorMode.RGB
+        image = t[:]
+
+        self.assertEqual(image.shape, (t.h, t.w, t.spp))
+
+        self.assertEqual(t['bitspersample'], 8)
+        self.assertEqual(t['compression'], Compression.OJPEG)
+        self.assertEqual(t['photometric'], Photometric.YCBCR)
+        self.assertEqual(t['xresolution'], 75.0)
+        self.assertEqual(t['yresolution'], 75.0)
+        self.assertEqual(t['planarconfig'], PlanarConfig.CONTIG)
+        self.assertEqual(t['resolutionunit'], ResolutionUnit.NONE)
+        self.assertEqual(t['tilewidth'], 240)
+        self.assertEqual(t['tilelength'], 224)
+        self.assertEqual(t['jpegproc'], JPEGProc.BASELINE)
+        self.assertEqual(t['jpegqtables'], (7364, 7428, 7492))
+        self.assertEqual(t['jpegdctables'], (7568, 7596, 7624))
+        self.assertEqual(t['jpegactables'], (7664, 7842, 8020))
+        self.assertEqual(t['ycbcrcoefficients'], (0.299, 0.587, 0.114))
+        self.assertEqual(t['ycbcrsubsampling'], (2, 2))
+        self.assertEqual(t['referenceblackwhite'], (16, 235, 128, 240, 128, 240))
+
     def test_write_read_ycbcr_jpeg_rgb(self):
         """
         Scenario: Write the scikit-image "astronaut" as ycbcr/jpeg.
