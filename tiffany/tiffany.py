@@ -74,11 +74,32 @@ class TIFF(object):
         return self['imagelength']
 
     @property
+    def th(self):
+        """
+        Shortcut for the image tile height.
+        """
+        return self['tilelength']
+
+    @property
     def w(self):
         """
         Shortcut for the image width.
         """
         return self['imagewidth']
+
+    @property
+    def tw(self):
+        """
+        Shortcut for the image tile width.
+        """
+        return self['tilewidth']
+
+    @property
+    def rps(self):
+        """
+        Shortcut for the image rows per strip
+        """
+        return self['rowsperstrip']
 
     @property
     def spp(self):
@@ -102,31 +123,74 @@ class TIFF(object):
         """
         Write an entire stripped image.
         """
-        numstrips = int(self['imagelength'] / self['rowsperstrip'])
-        stripnum = -1
-        for r in range(numstrips):
-            rslice = slice(r * self['rowsperstrip'],
-                           (r + 1) * self['rowsperstrip'])
+        numstrips = lib.numberOfStrips(self.tfp)
+        for row in range(0, self.h, self.rps):
+            stripnum = lib.computeStrip(self.tfp, row, 0)
+            rslice = slice(row, row + self.rps)
+
             strip = image[rslice, :].copy()
-            stripnum += 1
+
+            # Is it the last strip?  Is that last strip a full strip?
+            # If not, then we need to pad it.
+            if stripnum == (numstrips - 1) and self.h % self.rps > 0:
+                if self.spp > 1:
+                    shape = rslice.stop - self.h, self.w, self.spp
+                else:
+                    shape = rslice.stop - self.h, self.w
+                arrs = strip, np.zeros(shape, dtype=strip.dtype)
+                strip = np.concatenate(arrs, axis=0)
+
             lib.writeEncodedStrip(self.tfp, stripnum, strip, size=strip.nbytes)
 
     def _writeTiledImage(self, image):
         """
         Write an entire tiled image.
         """
-        # numtiles = lib.numberOfTiles(self.tfp)
-        numtilerows = int(self['imagelength'] / self['tilelength'])
-        numtilecols = int(self['imagewidth'] / self['tilewidth'])
-        tilenum = -1
-        for r in range(numtilerows):
-            rslice = slice(r * self['tilelength'],
-                           (r + 1) * self['tilelength'])
-            for c in range(numtilecols):
-                cslice = slice(c * self['tilewidth'],
-                               (c + 1) * self['tilewidth'])
+        numtilerows = int(round(self.h / self.th + 0.5))
+        numtilecols = int(round(self.w / self.tw + 0.5))
+
+        tilerow = -1
+
+        for row in range(0, self.h, self.th):
+
+            tilerow += 1
+
+            rslice = slice(row, row + self.th)
+
+            tilecol = -1
+
+            for col in range(0, self.w, self.tw):
+
+                tilecol += 1
+
+                cslice = slice(col, col + self.tw)
+                tilenum = lib.computeTile(self.tfp, col, row, 0)
                 tile = image[rslice, cslice].copy()
-                tilenum += 1
+
+                if self.w % self.tw > 0 and tilecol == (numtilecols - 1):
+                    # If the tile dimensions don't evenly partition the image
+                    # and if the tile column is at the end, then the tile
+                    # right now is truncated.  Extend it on the right hand
+                    # side to a full tile.
+                    if self.spp > 1:
+                        shape = (tile.shape[0], cslice.stop - self.w, self.spp)
+                    else:
+                        shape = (tile.shape[0], cslice.stop - self.w)
+                    padright = np.zeros(shape, dtype=image.dtype)
+                    tile = np.concatenate((tile, padright), axis=1)
+
+                if self.h % self.th > 0 and tilerow == (numtilerows - 1):
+                    # If the tile dimensions don't evenly partition the image
+                    # and if the tile row is at the end, the image tile is
+                    # truncated.  Extend it on the bottom side to a full
+                    # tile.
+                    if self.spp > 1:
+                        shape = (rslice.stop - self.h, tile.shape[1], self.spp)
+                    else:
+                        shape = (rslice.stop - self.h, tile.shape[1])
+                    padbottom = np.zeros(shape, dtype=image.dtype)
+                    tile = np.concatenate((tile, padbottom), axis=0)
+
                 lib.writeEncodedTile(self.tfp, tilenum, tile, size=tile.nbytes)
 
     def __setitem__(self, idx, value):
@@ -164,16 +228,22 @@ class TIFF(object):
         """
         Read entire image where the orientation is stripped.
         """
-        shape = (
-            self['imagelength'], self['imagewidth'], self['samplesperpixel']
-        )
+        numstrips = lib.numberOfStrips(self.tfp)
+
+        shape = self.h, self.w, self.spp
         image = np.zeros(shape, dtype=np.uint8)
-        height = self['imagelength']
-        stripheight = self['rowsperstrip']
-        for row in range(0, height, stripheight):
-            rslice = slice(row, row + stripheight)
+
+        for row in range(0, self.h, self.rps):
+            rslice = slice(row, row + self.rps)
             stripnum = lib.computeStrip(self.tfp, row, 0)
             strip = lib.readEncodedStrip(self.tfp, stripnum)
+
+            # Is it the last strip?  Is that last strip a full strip?
+            # If not, then we need to shave off some rows.
+            if stripnum == (numstrips - 1):
+                if self.h % self.rps > 0:
+                    strip = strip[:self.h % self.rps, :]
+
             image[rslice, :, :] = strip
 
         if self['samplesperpixel'] == 1:
@@ -186,18 +256,31 @@ class TIFF(object):
         """
         Helper routine for assembling an entire image out of tiles.
         """
-        shape = (
-            self['imagelength'], self['imagewidth'], self['samplesperpixel']
-        )
+        numtilerows = int(round(self.h / self.th + 0.5))
+        numtilecols = int(round(self.w / self.tw + 0.5))
+
+        shape = self.h, self.w, self.spp
         image = np.zeros(shape, dtype=np.uint8)
-        height, width = self['imagelength'], self['imagewidth']
-        theight, twidth = self['tilelength'], self['tilewidth']
-        for row in range(0, height, theight):
-            rslice = slice(row, row + theight)
-            for col in range(0, width, twidth):
+
+        # Do the tile dimensions partition the image?  If not, then we will
+        # need to chop up tiles read on the right hand side and on the bottom.
+        partitioned = (self.h % self.th) == 0 and (self.w % self.th) == 0
+
+        for row in range(0, self.h, self.th):
+            rslice = slice(row, row + self.th)
+            for col in range(0, self.w, self.tw):
                 tilenum = lib.computeTile(self.tfp, col, row, 0)
-                cslice = slice(col, col + twidth)
+                cslice = slice(col, col + self.tw)
                 tile = lib.readEncodedTile(self.tfp, tilenum)
+
+                if not partitioned and col // self.tw == numtilecols - 1:
+                    # OK, we are on the right hand side.  Need to shave off
+                    # some columns.
+                    tile = tile[:, :(self.w - col)]
+                if not partitioned and row // self.th == numtilerows - 1:
+                    # OK, we are on the bottom.  Need to shave off some rows.
+                    tile = tile[:(self.h - row), :]
+
                 image[rslice, cslice, :] = tile
 
         if self['samplesperpixel'] == 1:

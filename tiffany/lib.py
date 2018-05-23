@@ -271,6 +271,18 @@ def isTiled(fp):
     return status
 
 
+def numberOfStrips(fp):
+    """
+    Corresponds to TIFFNumberOfStrips.
+    """
+    ARGTYPES = [ctypes.c_void_p]
+    _LIB.TIFFNumberOfStrips.argtypes = ARGTYPES
+    _LIB.TIFFNumberOfStrips.restype = ctypes.c_uint32
+
+    n = _LIB.TIFFNumberOfStrips(fp)
+    return n
+
+
 def numberOfTiles(fp):
     """
     Corresponds to TIFFNumberOfTiles.
