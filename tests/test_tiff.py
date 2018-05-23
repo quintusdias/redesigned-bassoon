@@ -293,6 +293,9 @@ class TestSuite(unittest.TestCase):
                         rps = int(expected.shape[0] / 2)
                         t['rowsperstrip'] = rps
                     t['compression'] = compression
+                    t['resolutionunit'] = ResolutionUnit.INCH
+                    t['xresolution'] = 7.5
+                    t['yresolution'] = 7.5
 
                     t[:] = expected
 
@@ -311,6 +314,10 @@ class TestSuite(unittest.TestCase):
                     else:
                         self.assertEqual(t['rowsperstrip'], rps)
                     self.assertEqual(t['compression'], compression)
+
+                    self.assertEqual(t['resolutionunit'], ResolutionUnit.INCH)
+                    self.assertEqual(t['xresolution'], 7.5)
+                    self.assertEqual(t['yresolution'], 7.5)
 
                     actual = t[:]
 

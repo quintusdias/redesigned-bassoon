@@ -40,11 +40,11 @@ TAGS = {
     },
     'xresolution': {
         'number': 282,
-        'type': ctypes.c_float,
+        'type': ctypes.c_double,
     },
     'yresolution': {
         'number': 283,
-        'type': ctypes.c_float,
+        'type': ctypes.c_double,
     },
     'planarconfig': {
         'number': 284,

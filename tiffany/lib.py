@@ -156,7 +156,6 @@ def setField(fp, tag, value):
     _LIB.TIFFSetField.argtypes = ARGTYPES
     _LIB.TIFFSetField.restype = check_error
 
-    # instantiate the tag value
     if tag_num == 530:
         _LIB.TIFFSetField(fp, tag_num, value[0], value[1])
     else:
