@@ -384,3 +384,54 @@ class TestSuite(unittest.TestCase):
                     actual = t[:]
 
                 np.testing.assert_equal(actual, expected)
+
+    def test_write_read_unequally_partitioned_images(self):
+        """
+        Scenario: Write the scikit-image "camera" to file.  The tiles and
+        strips do not equally partition the image.
+
+        Expected Result:  The data should be round-trip the same for greyscale
+        photometric interpretations and lossless compression schemes.
+        """
+        expected = skimage.data.camera()
+
+        for tiled in True, False:
+            with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                t = TIFF(tfile.name, mode='w')
+                t['photometric'] = Photometric.MINISBLACK
+
+                w, h = expected.shape
+                t['imagewidth'] = expected.shape[1]
+                t['imagelength'] = expected.shape[0]
+
+                t['bitspersample'] = 8
+                t['samplesperpixel'] = 1
+                if tiled:
+                    tw, th = 160, 160
+                    t['tilelength'] = th
+                    t['tilewidth'] = tw
+                else:
+                    rps = 160
+                    t['rowsperstrip'] = rps
+                t['compression'] = Compression.NONE
+
+                t[:] = expected
+
+                del t
+
+                t = TIFF(tfile.name)
+                self.assertEqual(t['photometric'], Photometric.MINISBLACK)
+                self.assertEqual(t['imagewidth'], w)
+                self.assertEqual(t['imagelength'], h)
+                self.assertEqual(t['bitspersample'], 8)
+                self.assertEqual(t['samplesperpixel'], 1)
+                if tiled:
+                    self.assertEqual(t['tilewidth'], tw)
+                    self.assertEqual(t['tilelength'], th)
+                else:
+                    self.assertEqual(t['rowsperstrip'], rps)
+                self.assertEqual(t['compression'], Compression.NONE)
+
+                actual = t[:]
+
+            np.testing.assert_equal(actual, expected)
