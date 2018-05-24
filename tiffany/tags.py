@@ -22,6 +22,14 @@ TAGS = {
         'number': 262,
         'type': ctypes.c_uint16,
     },
+    'documentname': {
+        'number': 269,
+        'type': ctypes.c_char,
+    },
+    'imagedescription': {
+        'number': 270,
+        'type': ctypes.c_char,
+    },
     'stripoffsets': {
         'number': 273,
         'type': (ctypes.c_uint32, ctypes.c_uint64),
@@ -54,9 +62,21 @@ TAGS = {
         'number': 296,
         'type': ctypes.c_uint16,
     },
+    'pagenumber': {
+        'number': 297,
+        'type': (ctypes.c_uint16, ctypes.c_uint16),
+    },
     'tilewidth': {
         'number': 322,
         'type': ctypes.c_uint32,
+    },
+    'software': {
+        'number': 305,
+        'type': ctypes.c_char,
+    },
+    'colormap': {
+        'number': 320,
+        'type': (ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16),
     },
     'tilelength': {
         'number': 323,
