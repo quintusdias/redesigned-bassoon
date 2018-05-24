@@ -116,6 +116,17 @@ class ResolutionUnit(IntEnum):
     INCH = 2
     CENTIMETER = 3
 
+class SampleFormat(IntEnum):
+    """
+    Corresponds to values listed in tiff.h
+    """
+    UINT = 1
+    INT = 2
+    IEEEFP = 3
+    VOID = 4
+    COMPLEXINT = 5
+    COMPLEXIEEEP = 6
+
 
 def close(fp):
     """
