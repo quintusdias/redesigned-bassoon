@@ -76,22 +76,26 @@ class TestSuite(unittest.TestCase):
         subsamplings = ((1, 1), (1, 2), (2, 1), (2, 2))
         tiled = (True, False)
         modes = ('w', 'w8')
+        quality = range(5, 96, 10)
 
         g = itertools.product(
-            photometrics, compressions, planars, tiled, subsamplings, modes
+            photometrics, compressions, planars, tiled, subsamplings, modes,
+            quality
         )
-        for photometric, compression, pc, tiled, subsampling, mode in g:
+        for photometric, comp, pc, tiled, subsampling, mode, q in g:
             with self.subTest(photometric=photometric,
-                              compression=compression,
+                              compression=comp,
                               planar_config=pc,
                               tiled=tiled,
                               subsampling=subsampling,
-                              mode=mode):
+                              mode=mode,
+                              quality=q):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)
                     t['photometric'] = photometric
-                    t['compression'] = compression
+                    t['compression'] = comp
                     t['jpegcolormode'] = JPEGColorMode.RGB
+                    t['jpegquality'] = q
 
                     w, h, nz = expected.shape
                     t['imagewidth'] = expected.shape[1]
@@ -101,6 +105,7 @@ class TestSuite(unittest.TestCase):
 
                     t['bitspersample'] = 8
                     t['samplesperpixel'] = 3
+
                     if tiled:
                         tw, th = int(w / 2), int(h / 2)
                         t['tilelength'] = th
@@ -115,6 +120,7 @@ class TestSuite(unittest.TestCase):
 
                     t = TIFF(tfile.name)
                     self.assertEqual(t['photometric'], photometric)
+                    self.assertEqual(t['compression'], comp)
                     self.assertEqual(t['planarconfig'], pc)
                     self.assertEqual(t['imagewidth'], w)
                     self.assertEqual(t['imagelength'], h)
@@ -125,11 +131,11 @@ class TestSuite(unittest.TestCase):
                         self.assertEqual(t['tilelength'], th)
                     else:
                         self.assertEqual(t['rowsperstrip'], rps)
-                    self.assertEqual(t['compression'], compression)
 
                     actual = t[:]
 
                 metric = skimage.measure.compare_psnr(expected, actual)
+                print(photometric, comp, pc, tiled, subsampling, mode, q, metric)
                 self.assertTrue(metric > 5)
 
     def test_write_read_ycbcr_jpeg_raw(self):

@@ -107,6 +107,10 @@ TAGS = {
         'type': (ctypes.c_float, ctypes.c_float, ctypes.c_float,
                  ctypes.c_float, ctypes.c_float, ctypes.c_float),
     },
+    'jpegquality': {
+        'number': 65537,
+        'type': ctypes.c_int32,
+    },
     'jpegcolormode': {
         'number': 65538,
         'type': ctypes.c_int32,
