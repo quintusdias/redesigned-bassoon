@@ -12,6 +12,16 @@ from .tags import TAGS
 _LIB = config.load_library()
 
 
+class NotRGBACompatibleError(RuntimeError):
+    """
+    Raise this exception if an attempt is made to set the rgba property on an
+    incompatible image.
+
+    See TIFFRGBAImage(3).
+    """
+    pass
+
+
 class Compression(IntEnum):
     """
     Corresponds to COMPRESSION_* values listed in tiff.h
@@ -115,6 +125,18 @@ class ResolutionUnit(IntEnum):
     NONE = 1
     INCH = 2
     CENTIMETER = 3
+
+
+class SampleFormat(IntEnum):
+    """
+    Corresponds to values listed in tiff.h
+    """
+    UINT = 1
+    INT = 2
+    IEEEFP = 3
+    VOID = 4
+    COMPLEXINT = 5
+    COMPLEXIEEEP = 6
 
 
 def close(fp):
@@ -320,6 +342,20 @@ def readRGBAImageOriented(fp, width=None, height=None,
     _LIB.TIFFReadRGBAImageOriented(fp, width, height, raster, orientation,
                                    stopOnError)
     return img
+
+
+def RGBAImageOK(fp):
+    """
+    Corresponds to TIFFRGBAImageOK.
+    """
+    emsg = ctypes.create_string_buffer(1024)
+    ARGTYPES = [ctypes.c_void_p, ctypes.c_char_p]
+    _LIB.TIFFRGBAImageOK.argtypes = ARGTYPES
+    _LIB.TIFFRGBAImageOK.restype = ctypes.c_int
+    ok = _LIB.TIFFRGBAImageOK(fp, emsg)
+    if not ok:
+        error_message = f"libtiff:  {emsg.value.decode('utf-8')}"
+        raise NotRGBACompatibleError(error_message)
 
 
 def writeEncodedStrip(fp, stripnum, stripdata, size=-1):

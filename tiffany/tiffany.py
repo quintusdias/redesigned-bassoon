@@ -23,6 +23,8 @@ class TIFF(object):
     datatype2fmt : dict
         Map the TIFF entry datatype to something that can be used by the struct
         module.
+    rgba : bool
+        If true, use the RGBA interface to read the image.
     tagnum2name : dict
         Map the tag number to a tag name.
     bigtiff: bool
@@ -62,9 +64,28 @@ class TIFF(object):
         if 'w' in mode:
             self.fp = None
         else:
+            self._rgba = False
             self.fp = self.path.open(mode='rb')
             self.parse_header()
             self.parse_ifd()
+
+    @property
+    def rgba(self):
+        return self._rgba
+
+    @rgba.setter
+    def rgba(self, value):
+        """
+        Parameters
+        ----------
+        value
+            Set to True if we wish to use the RGBA interface to read the image.
+        """
+        # First check if this is even ok to try.
+        lib.RGBAImageOK(self.tfp)
+
+        # Ok, we can proceed.
+        self._rgba = value
 
     @property
     def h(self):
@@ -294,7 +315,10 @@ class TIFF(object):
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
-            if self['compression'] == lib.Compression.OJPEG:
+            if self.rgba:
+                img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
+                return img
+            elif self['compression'] == lib.Compression.OJPEG:
                 if idx.start is None and idx.stop is None and idx.step is None:
                     # case is [:]
                     img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
