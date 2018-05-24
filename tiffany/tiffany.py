@@ -75,6 +75,16 @@ class TIFF(object):
 
     @rgba.setter
     def rgba(self, value):
+        """
+        Parameters
+        ----------
+        value
+            Set to True if we wish to use the RGBA interface to read the image.
+        """
+        # First check if this is even ok to try.
+        lib.RGBAImageOK(self.tfp)
+
+        # Ok, we can proceed.
         self._rgba = value
 
     @property

@@ -1,19 +1,15 @@
 # Local imports
-import itertools
 import pathlib
-import tempfile
 import unittest
 
 # Third party library imports
 import numpy as np
-import skimage.data
-import skimage.measure
 
 # Local imports
-from tiffany.tiffany import TIFF, JPEGColorModeRawError
+from tiffany.tiffany import TIFF
 from tiffany.lib import (
-    Compression, JPEGProc, Photometric, PlanarConfig, JPEGColorMode,
-    ResolutionUnit, SampleFormat
+    Compression, Photometric, PlanarConfig, JPEGProc,
+    ResolutionUnit, SampleFormat, NotRGBACompatibleError
 )
 
 
@@ -25,6 +21,18 @@ class TestSuite(unittest.TestCase):
         """
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
+
+    def test_rgba_refused_on_bad_candidate(self):
+        """
+        Scenario: Attempt to read a float32 image using the RGBA interface.
+
+        Expected Result:  We should error out since floating point images are
+        not covered by the RGBA man page.
+        """
+        path = self._get_path('tiger-minisblack-float-strip-32.tif')
+        t = TIFF(path)
+        with self.assertRaises(NotRGBACompatibleError):
+            t.rgba = True
 
     def test_read_8bit_palette_as_rgba(self):
         """

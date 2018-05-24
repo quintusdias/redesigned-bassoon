@@ -13,7 +13,7 @@ import skimage.measure
 # Local imports
 from tiffany.tiffany import TIFF, JPEGColorModeRawError
 from tiffany.lib import (
-    Compression, JPEGProc, Photometric, PlanarConfig, JPEGColorMode,
+    Compression, Photometric, PlanarConfig, JPEGColorMode,
     ResolutionUnit
 )
 

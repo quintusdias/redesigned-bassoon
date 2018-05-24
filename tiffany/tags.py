@@ -94,6 +94,14 @@ TAGS = {
         'number': 339,
         'type': ctypes.c_uint16,
     },
+    'sminsamplevalue': {
+        'number': 340,
+        'type': ctypes.c_double,
+    },
+    'smaxsamplevalue': {
+        'number': 341,
+        'type': ctypes.c_double,
+    },
     'jpegtables': {
         'number': 347,
         'type': None,
