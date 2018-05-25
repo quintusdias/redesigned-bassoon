@@ -2,12 +2,8 @@
 import ctypes
 
 TAGS = {
-    'bitspersample': {
-        'number': 258,
-        'type': ctypes.c_uint16,
-    },
-    'compression': {
-        'number': 259,
+    'subfiletype': {
+        'number': 255,
         'type': ctypes.c_uint16,
     },
     'imagewidth': {
@@ -18,8 +14,20 @@ TAGS = {
         'number': 257,
         'type': ctypes.c_uint32,
     },
+    'bitspersample': {
+        'number': 258,
+        'type': ctypes.c_uint16,
+    },
+    'compression': {
+        'number': 259,
+        'type': ctypes.c_uint16,
+    },
     'photometric': {
         'number': 262,
+        'type': ctypes.c_uint16,
+    },
+    'fillorder': {
+        'number': 266,
         'type': ctypes.c_uint16,
     },
     'documentname': {

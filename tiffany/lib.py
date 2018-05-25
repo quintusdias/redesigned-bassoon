@@ -110,6 +110,15 @@ class JPEGProc(IntEnum):
     LOSSLESS = 14
 
 
+class OSubFileType(IntEnum):
+    """
+    Corresponds to OFILETYPE* values listed in tiff.h
+    """
+    IMAGE = 1
+    REDUCEDIMAGE = 2
+    PAGE = 3
+
+
 class PlanarConfig(IntEnum):
     """
     Corresponds to TIFFTAG_PLANARCONFIG* values listed in tiff.h
