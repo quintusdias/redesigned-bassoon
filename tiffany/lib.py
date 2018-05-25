@@ -157,6 +157,14 @@ class T4Options(IntEnum):
     FILLBITS = 4
 
 
+class YCbCrPosition(IntEnum):
+    """
+    Corresponds to YCBCRPOSITION* values listed in tiff.h
+    """
+    CENTERED = 1
+    COSITED = 2
+
+
 def close(fp):
     """
     Corresponds to TIFFClose

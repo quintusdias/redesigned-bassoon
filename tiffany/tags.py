@@ -166,6 +166,10 @@ TAGS = {
         'number': 530,
         'type': (ctypes.c_uint16, ctypes.c_uint16),
     },
+    'ycbcrpositioning': {
+        'number': 531,
+        'type': ctypes.c_uint16,
+    },
     'referenceblackwhite': {
         'number': 532,
         'type': (ctypes.c_float, ctypes.c_float, ctypes.c_float,
