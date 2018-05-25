@@ -34,6 +34,10 @@ TAGS = {
         'number': 273,
         'type': (ctypes.c_uint32, ctypes.c_uint64),
     },
+    'orientation': {
+        'number': 274,
+        'type': ctypes.c_uint16,
+    },
     'samplesperpixel': {
         'number': 277,
         'type': ctypes.c_uint16,
@@ -45,6 +49,14 @@ TAGS = {
     'stripbytecounts': {
         'number': 279,
         'type': None,
+    },
+    'minsamplevalue': {
+        'number': 280,
+        'type': ctypes.c_uint16,
+    },
+    'maxsamplevalue': {
+        'number': 281,
+        'type': ctypes.c_uint16,
     },
     'xresolution': {
         'number': 282,
@@ -134,6 +146,18 @@ TAGS = {
         'number': 532,
         'type': (ctypes.c_float, ctypes.c_float, ctypes.c_float,
                  ctypes.c_float, ctypes.c_float, ctypes.c_float),
+    },
+    'datatype': {
+        'number': 32996,
+        'type': None,
+    },
+    'imagedepth': {
+        'number': 32997,
+        'type': None,
+    },
+    'tiledepth': {
+        'number': 32998,
+        'type': None,
     },
     'jpegcolormode': {
         'number': 65538,
