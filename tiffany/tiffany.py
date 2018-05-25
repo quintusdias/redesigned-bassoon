@@ -4,6 +4,7 @@ import pathlib
 import struct
 
 # 3rd party libraries
+from lxml import etree
 import numpy as np
 
 from . import lib
@@ -118,11 +119,31 @@ class TIFF(object):
         return self['TileWidth']
 
     @property
+    def bps(self):
+        """
+        Shortcut for the image bits per sample.
+
+        TIFFs will store more than one value if there is more than one image
+        plane.  We assume that only one value is needed.
+        """
+        try:
+            return self['BitsPerSample'][0]
+        except TypeError:
+            return self['BitsPerSample']
+
+    @property
     def rps(self):
         """
         Shortcut for the image rows per strip
         """
         return self['RowsPerStrip']
+
+    @property
+    def sf(self):
+        """
+        Shortcut for the sample format
+        """
+        return self['SampleFormat']
 
     @property
     def spp(self):
@@ -247,6 +268,31 @@ class TIFF(object):
             msg = f"Unhandled:  {idx}"
             raise RuntimeError(msg)
 
+    def _determine_datatype(self):
+        """
+        Determine the datatype for incoming imagery.
+        """
+        if self.bps == 8 and self.sf == lib.SampleFormat.UINT:
+            return np.uint8
+        elif self.bps == 8 and self.sf == lib.SampleFormat.INT:
+            return np.int8
+        elif self.bps == 16 and self.sf == lib.SampleFormat.UINT:
+            return np.uint16
+        elif self.bps == 16 and self.sf == lib.SampleFormat.INT:
+            return np.int16
+        elif self.bps == 32 and self.sf == lib.SampleFormat.UINT:
+            return np.uint32
+        elif self.bps == 32 and self.sf == lib.SampleFormat.INT:
+            return np.int32
+        elif self.bps == 32 and self.sf == lib.SampleFormat.IEEEFP:
+            return np.float
+        elif self.bps == 64 and self.sf == lib.SampleFormat.UINT:
+            return np.uint64
+        elif self.bps == 64 and self.sf == lib.SampleFormat.INT:
+            return np.int64
+        elif self.bps == 64 and self.sf == lib.SampleFormat.IEEEFP:
+            return np.double
+
     def _readStrippedImage(self, idx):
         """
         Read entire image where the orientation is stripped.
@@ -254,12 +300,17 @@ class TIFF(object):
         numstrips = lib.numberOfStrips(self.tfp)
 
         shape = self.h, self.w, self.spp
-        image = np.zeros(shape, dtype=np.uint8)
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        stripshape = (self.rps, self.w, self.spp)
 
         for row in range(0, self.h, self.rps):
             rslice = slice(row, row + self.rps)
+
             stripnum = lib.computeStrip(self.tfp, row, 0)
-            strip = lib.readEncodedStrip(self.tfp, stripnum)
+            strip = np.zeros(stripshape, dtype=dtype)
+            lib.readEncodedStrip(self.tfp, stripnum, strip)
 
             # Is it the last strip?  Is that last strip a full strip?
             # If not, then we need to shave off some rows.
@@ -283,7 +334,10 @@ class TIFF(object):
         numtilecols = int(round(self.w / self.tw + 0.5))
 
         shape = self.h, self.w, self.spp
-        image = np.zeros(shape, dtype=np.uint8)
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        tileshape = (self.th, self.tw, self.spp)
 
         # Do the tile dimensions partition the image?  If not, then we will
         # need to chop up tiles read on the right hand side and on the bottom.
@@ -294,7 +348,9 @@ class TIFF(object):
             for col in range(0, self.w, self.tw):
                 tilenum = lib.computeTile(self.tfp, col, row, 0)
                 cslice = slice(col, col + self.tw)
-                tile = lib.readEncodedTile(self.tfp, tilenum)
+
+                tile = np.zeros(tileshape, dtype=dtype)
+                lib.readEncodedTile(self.tfp, tilenum, tile)
 
                 if not partitioned and col // self.tw == numtilecols - 1:
                     # OK, we are on the right hand side.  Need to shave off
@@ -335,6 +391,9 @@ class TIFF(object):
             if idx == 'JPEGColorMode':
                 # This is a pseudo-tag that the user might not have set.
                 return lib.getFieldDefaulted(self.tfp, 'JPEGColorMode')
+            elif idx == 'SampleFormat':
+                # This is a tag that the user might not have set.
+                return lib.getFieldDefaulted(self.tfp, 'SampleFormat')
             return self.tags[idx]
 
     def parse_ifd(self):
@@ -423,6 +482,12 @@ class TIFF(object):
                 payload = payload[0]
 
         tag_name = self.tagnum2name[tag_num]
+
+        # Special processing?
+        if tag_num == 42112:
+            # GDAL_METADATA is an XML fragment.
+            payload = etree.fromstring(payload)
+
         return tag_name, payload
 
     def parse_header(self):

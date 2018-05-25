@@ -284,7 +284,7 @@ def computeTile(fp, x, y, sample):
     return tilenum
 
 
-def readEncodedStrip(fp, stripnum):
+def readEncodedStrip(fp, stripnum, strip):
     """
     Corresponds to TIFFReadEncodedStrip
     """
@@ -293,17 +293,12 @@ def readEncodedStrip(fp, stripnum):
     ]
     _LIB.TIFFReadEncodedStrip.argtypes = ARGTYPES
     _LIB.TIFFReadEncodedStrip.restype = check_error
-    rps = getField(fp, 'RowsPerStrip')
-    width = getField(fp, 'ImageWidth')
-    spp = getField(fp, 'SamplesPerPixel')
-    shape = (rps, width, spp)
-    image = np.zeros(shape, dtype=np.uint8)
     _LIB.TIFFReadEncodedStrip(fp, stripnum,
-                              image.ctypes.data_as(ctypes.c_void_p), -1)
-    return image
+                              strip.ctypes.data_as(ctypes.c_void_p), -1)
+    return strip
 
 
-def readEncodedTile(fp, tilenum):
+def readEncodedTile(fp, tilenum, tile):
     """
     Corresponds to TIFFComputeTile
     """
@@ -311,14 +306,9 @@ def readEncodedTile(fp, tilenum):
                 ctypes.c_int32]
     _LIB.TIFFReadEncodedTile.argtypes = ARGTYPES
     _LIB.TIFFReadEncodedTile.restype = check_error
-    tilelength = getField(fp, 'TileLength')
-    tilewidth = getField(fp, 'TileWidth')
-    spp = getField(fp, 'SamplesPerPixel')
-    shape = (tilelength, tilewidth, spp)
-    image = np.zeros(shape, dtype=np.uint8)
     _LIB.TIFFReadEncodedTile(fp, tilenum,
-                             image.ctypes.data_as(ctypes.c_void_p), -1)
-    return image
+                             tile.ctypes.data_as(ctypes.c_void_p), -1)
+    return tile
 
 
 def getField(fp, tag):
