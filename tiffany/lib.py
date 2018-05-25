@@ -148,6 +148,15 @@ class SampleFormat(IntEnum):
     COMPLEXIEEEP = 6
 
 
+class T4Options(IntEnum):
+    """
+    Corresponds to GROUP3OPT* values listed in tiff.h
+    """
+    TWOD_ENCODING = 1
+    UNCOMPRESSED = 2
+    FILLBITS = 4
+
+
 def close(fp):
     """
     Corresponds to TIFFClose

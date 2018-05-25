@@ -78,6 +78,10 @@ TAGS = {
         'number': 284,
         'type': ctypes.c_uint16,
     },
+    't4options': {
+        'number': 292,
+        'type': None,
+    },
     'resolutionunit': {
         'number': 296,
         'type': ctypes.c_uint16,
@@ -108,6 +112,18 @@ TAGS = {
     },
     'tilebytecounts': {
         'number': 325,
+        'type': None,
+    },
+    'badfaxlines': {
+        'number': 326,
+        'type': None,
+    },
+    'cleanfaxdata': {
+        'number': 327,
+        'type': None,
+    },
+    'consecutivebadfaxlines': {
+        'number': 328,
         'type': None,
     },
     'sampleformat': {
