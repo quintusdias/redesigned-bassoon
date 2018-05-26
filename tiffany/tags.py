@@ -38,6 +38,14 @@ TAGS = {
         'number': 270,
         'type': ctypes.c_char,
     },
+    'make': {
+        'number': 271,
+        'type': ctypes.c_char,
+    },
+    'model': {
+        'number': 272,
+        'type': ctypes.c_char,
+    },
     'stripoffsets': {
         'number': 273,
         'type': (ctypes.c_uint32, ctypes.c_uint64),
@@ -96,6 +104,10 @@ TAGS = {
     },
     'software': {
         'number': 305,
+        'type': ctypes.c_char,
+    },
+    'datetime': {
+        'number': 306,
         'type': ctypes.c_char,
     },
     'colormap': {
@@ -186,6 +198,14 @@ TAGS = {
     'tiledepth': {
         'number': 32998,
         'type': None,
+    },
+    'copyright': {
+        'number': 33432,
+        'type': ctypes.c_char,
+    },
+    'exififd': {
+        'number': 34665,
+        'type': ctypes.c_int32,
     },
     'jpegcolormode': {
         'number': 65538,
