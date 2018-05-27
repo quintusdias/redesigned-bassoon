@@ -12,10 +12,7 @@ import skimage.measure
 
 # Local imports
 from tiffany.tiffany import TIFF, JPEGColorModeRawError
-from tiffany.lib import (
-    Compression, Photometric, PlanarConfig, JPEGColorMode,
-    ResolutionUnit
-)
+from tiffany import lib
 
 
 @unittest.skipIf(platform.system() == 'Windows', "tempfile issue on Windows")
@@ -36,15 +33,15 @@ class TestSuite(unittest.TestCase):
         """
         expected = skimage.data.astronaut()
 
-        photometrics = (Photometric.YCBCR,)
-        compressions = (Compression.JPEG,)
-        planars = (PlanarConfig.CONTIG,)
+        photometrics = (lib.Photometric.YCBCR,)
+        Compressions = (lib.Compression.JPEG,)
+        planars = (lib.PlanarConfig.CONTIG,)
         subsamplings = ((1, 1), (1, 2), (2, 1), (2, 2))
         tiled = (True, False)
         modes = ('w', 'w8')
 
         g = itertools.product(
-            photometrics, compressions, planars, tiled, subsamplings, modes
+            photometrics, Compressions, planars, tiled, subsamplings, modes
         )
         for photometric, compression, pc, tiled, subsampling, mode in g:
             with self.subTest(photometric=photometric,
@@ -55,43 +52,43 @@ class TestSuite(unittest.TestCase):
                               mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)
-                    t['photometric'] = photometric
-                    t['compression'] = compression
-                    t['jpegcolormode'] = JPEGColorMode.RGB
+                    t['Photometric'] = photometric
+                    t['Compression'] = compression
+                    t['JPEGColorMode'] = lib.JPEGColorMode.RGB
 
                     w, h, nz = expected.shape
-                    t['imagewidth'] = expected.shape[1]
-                    t['imagelength'] = expected.shape[0]
-                    t['planarconfig'] = pc
-                    t['ycbcrsubsampling'] = subsampling
+                    t['ImageWidth'] = expected.shape[1]
+                    t['ImageLength'] = expected.shape[0]
+                    t['PlanarConfig'] = pc
+                    t['YCbCrSubsampling'] = subsampling
 
-                    t['bitspersample'] = 8
-                    t['samplesperpixel'] = 3
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = 3
                     if tiled:
                         tw, th = int(w / 2), int(h / 2)
-                        t['tilelength'] = th
-                        t['tilewidth'] = tw
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
                     else:
                         rps = int(expected.shape[0] / 2)
-                        t['rowsperstrip'] = rps
+                        t['RowsPerStrip'] = rps
 
                     t[:] = expected
 
                     del t
 
                     t = TIFF(tfile.name)
-                    self.assertEqual(t['photometric'], photometric)
-                    self.assertEqual(t['planarconfig'], pc)
-                    self.assertEqual(t['imagewidth'], w)
-                    self.assertEqual(t['imagelength'], h)
-                    self.assertEqual(t['bitspersample'], (8, 8, 8))
-                    self.assertEqual(t['samplesperpixel'], 3)
+                    self.assertEqual(t['Photometric'], photometric)
+                    self.assertEqual(t['PlanarConfig'], pc)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['BitsPerSample'], (8, 8, 8))
+                    self.assertEqual(t['SamplesPerPixel'], 3)
                     if tiled:
-                        self.assertEqual(t['tilewidth'], tw)
-                        self.assertEqual(t['tilelength'], th)
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
                     else:
-                        self.assertEqual(t['rowsperstrip'], rps)
-                    self.assertEqual(t['compression'], compression)
+                        self.assertEqual(t['RowsPerStrip'], rps)
+                    self.assertEqual(t['Compression'], compression)
 
                     actual = t[:]
 
@@ -109,41 +106,41 @@ class TestSuite(unittest.TestCase):
         expected = skimage.data.astronaut()
         ycbcr = skimage.color.rgb2ycbcr(expected).astype(np.uint8)
 
-        photometrics = (Photometric.YCBCR,)
-        compressions = (Compression.JPEG,)
-        planars = (PlanarConfig.CONTIG,)
+        photometrics = (lib.Photometric.YCBCR,)
+        Compressions = (lib.Compression.JPEG,)
+        planars = (lib.PlanarConfig.CONTIG,)
         tiled = (True, False)
         modes = ('w', 'w8')
 
         g = itertools.product(
-            photometrics, compressions, planars, tiled, modes
+            photometrics, Compressions, planars, tiled, modes
         )
         for photometric, compression, planar_config, tiled, mode in g:
             with self.subTest(photometric=photometric,
-                              compression=compression,
+                              Compression=compression,
                               planar_config=planar_config,
                               tiled=tiled,
                               mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)
-                    t['photometric'] = photometric
+                    t['Photometric'] = photometric
 
                     w, h, nz = expected.shape
-                    t['imagewidth'] = expected.shape[1]
-                    t['imagelength'] = expected.shape[0]
-                    t['planarconfig'] = planar_config
-                    t['ycbcrsubsampling'] = 1, 1
+                    t['ImageWidth'] = expected.shape[1]
+                    t['ImageLength'] = expected.shape[0]
+                    t['PlanarConfig'] = planar_config
+                    t['YCbCrSubsampling'] = 1, 1
 
-                    t['bitspersample'] = 8
-                    t['samplesperpixel'] = 3
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = 3
                     if tiled:
                         tw, th = int(w / 2), int(h / 2)
-                        t['tilelength'] = th
-                        t['tilewidth'] = tw
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
                     else:
                         rps = int(expected.shape[0] / 2)
-                        t['rowsperstrip'] = rps
-                    t['compression'] = compression
+                        t['RowsPerStrip'] = rps
+                    t['Compression'] = compression
 
                     with self.assertRaises(JPEGColorModeRawError):
                         t[:] = ycbcr
@@ -156,14 +153,14 @@ class TestSuite(unittest.TestCase):
         """
         expected = skimage.data.astronaut()
 
-        photometrics = (Photometric.RGB,)
-        compressions = (Compression.JPEG,)
-        planars = (PlanarConfig.CONTIG,)
+        photometrics = (lib.Photometric.RGB,)
+        Compressions = (lib.Compression.JPEG,)
+        planars = (lib.PlanarConfig.CONTIG,)
         tiled = (True, False)
         modes = ('w', 'w8')
 
         g = itertools.product(
-            photometrics, compressions, planars, tiled, modes
+            photometrics, Compressions, planars, tiled, modes
         )
         for photometric, compression, planar_config, tiled, mode in g:
             with self.subTest(photometric=photometric,
@@ -173,41 +170,41 @@ class TestSuite(unittest.TestCase):
                               mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)
-                    t['photometric'] = photometric
+                    t['Photometric'] = photometric
 
                     w, h, nz = expected.shape
-                    t['imagewidth'] = expected.shape[1]
-                    t['imagelength'] = expected.shape[0]
-                    t['planarconfig'] = planar_config
+                    t['ImageWidth'] = expected.shape[1]
+                    t['ImageLength'] = expected.shape[0]
+                    t['PlanarConfig'] = planar_config
 
-                    t['bitspersample'] = 8
-                    t['samplesperpixel'] = 3
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = 3
                     if tiled:
                         tw, th = int(w / 2), int(h / 2)
-                        t['tilelength'] = th
-                        t['tilewidth'] = tw
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
                     else:
                         rps = int(expected.shape[0] / 2)
-                        t['rowsperstrip'] = rps
-                    t['compression'] = compression
+                        t['RowsPerStrip'] = rps
+                    t['Compression'] = compression
 
                     t[:] = expected
 
                     del t
 
                     t = TIFF(tfile.name)
-                    self.assertEqual(t['photometric'], photometric)
-                    self.assertEqual(t['planarconfig'], planar_config)
-                    self.assertEqual(t['imagewidth'], w)
-                    self.assertEqual(t['imagelength'], h)
-                    self.assertEqual(t['bitspersample'], (8, 8, 8))
-                    self.assertEqual(t['samplesperpixel'], 3)
+                    self.assertEqual(t['Photometric'], photometric)
+                    self.assertEqual(t['PlanarConfig'], planar_config)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['BitsPerSample'], (8, 8, 8))
+                    self.assertEqual(t['SamplesPerPixel'], 3)
                     if tiled:
-                        self.assertEqual(t['tilewidth'], tw)
-                        self.assertEqual(t['tilelength'], th)
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
                     else:
-                        self.assertEqual(t['rowsperstrip'], rps)
-                    self.assertEqual(t['compression'], compression)
+                        self.assertEqual(t['RowsPerStrip'], rps)
+                    self.assertEqual(t['Compression'], compression)
 
                     actual = t[:]
 
@@ -219,20 +216,20 @@ class TestSuite(unittest.TestCase):
         Scenario: Write the scikit-image "astronaut" to file.
 
         Expected Result:  The image should be lossless for the appropriate
-        compression schemes.
+        Compression schemes.
         """
         expected = skimage.data.astronaut()
 
-        photometrics = (Photometric.RGB,)
-        compressions = (Compression.NONE, Compression.LZW,
-                        Compression.PACKBITS, Compression.DEFLATE,
-                        Compression.ADOBE_DEFLATE, Compression.LZMA)
-        planars = (PlanarConfig.CONTIG,)
+        photometrics = (lib.Photometric.RGB,)
+        Compressions = (lib.Compression.NONE, lib.Compression.LZW,
+                        lib.Compression.PACKBITS, lib.Compression.DEFLATE,
+                        lib.Compression.ADOBE_DEFLATE, lib.Compression.LZMA)
+        planars = (lib.PlanarConfig.CONTIG,)
         tiled = (True, False)
         modes = ('w', 'w8')
 
         g = itertools.product(
-            photometrics, compressions, planars, tiled, modes
+            photometrics, Compressions, planars, tiled, modes
         )
         for photometric, compression, planar_config, tiled, mode in g:
             with self.subTest(photometric=photometric,
@@ -242,48 +239,49 @@ class TestSuite(unittest.TestCase):
                               mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)
-                    t['photometric'] = photometric
+                    t['Photometric'] = photometric
 
                     w, h, nz = expected.shape
-                    t['imagewidth'] = expected.shape[1]
-                    t['imagelength'] = expected.shape[0]
-                    t['planarconfig'] = planar_config
+                    t['ImageWidth'] = expected.shape[1]
+                    t['ImageLength'] = expected.shape[0]
+                    t['PlanarConfig'] = planar_config
 
-                    t['bitspersample'] = 8
-                    t['samplesperpixel'] = 3
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = 3
                     if tiled:
                         tw, th = int(w / 2), int(h / 2)
-                        t['tilelength'] = th
-                        t['tilewidth'] = tw
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
                     else:
                         rps = int(expected.shape[0] / 2)
-                        t['rowsperstrip'] = rps
-                    t['compression'] = compression
-                    t['resolutionunit'] = ResolutionUnit.INCH
-                    t['xresolution'] = 7.5
-                    t['yresolution'] = 7.5
+                        t['RowsPerStrip'] = rps
+                    t['Compression'] = compression
+                    t['ResolutionUnit'] = lib.ResolutionUnit.INCH
+                    t['XResolution'] = 7.5
+                    t['YResolution'] = 7.5
 
                     t[:] = expected
 
                     del t
 
                     t = TIFF(tfile.name)
-                    self.assertEqual(t['photometric'], photometric)
-                    self.assertEqual(t['planarconfig'], planar_config)
-                    self.assertEqual(t['imagewidth'], w)
-                    self.assertEqual(t['imagelength'], h)
-                    self.assertEqual(t['bitspersample'], (8, 8, 8))
-                    self.assertEqual(t['samplesperpixel'], 3)
+                    self.assertEqual(t['Photometric'], photometric)
+                    self.assertEqual(t['PlanarConfig'], planar_config)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['BitsPerSample'], (8, 8, 8))
+                    self.assertEqual(t['SamplesPerPixel'], 3)
                     if tiled:
-                        self.assertEqual(t['tilewidth'], tw)
-                        self.assertEqual(t['tilelength'], th)
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
                     else:
-                        self.assertEqual(t['rowsperstrip'], rps)
-                    self.assertEqual(t['compression'], compression)
+                        self.assertEqual(t['RowsPerStrip'], rps)
+                    self.assertEqual(t['Compression'], compression)
 
-                    self.assertEqual(t['resolutionunit'], ResolutionUnit.INCH)
-                    self.assertEqual(t['xresolution'], 7.5)
-                    self.assertEqual(t['yresolution'], 7.5)
+                    self.assertEqual(t['ResolutionUnit'],
+                                     lib.ResolutionUnit.INCH)
+                    self.assertEqual(t['XResolution'], 7.5)
+                    self.assertEqual(t['YResolution'], 7.5)
 
                     actual = t[:]
 
@@ -294,14 +292,14 @@ class TestSuite(unittest.TestCase):
         Scenario: Write the scikit-image "camera" to file.
 
         Expected Result:  The data should be round-trip the same for greyscale
-        photometric interpretations and lossless compression schemes.
+        photometric interpretations and lossless Compression schemes.
         """
         expected = skimage.data.camera()
 
-        photometrics = (Photometric.MINISBLACK, Photometric.MINISWHITE)
-        compressions = (Compression.NONE, Compression.LZW,
-                        Compression.PACKBITS, Compression.DEFLATE,
-                        Compression.ADOBE_DEFLATE, Compression.LZMA)
+        photometrics = (lib.Photometric.MINISBLACK, lib.Photometric.MINISWHITE)
+        compressions = (lib.Compression.NONE, lib.Compression.LZW,
+                        lib.Compression.PACKBITS, lib.Compression.DEFLATE,
+                        lib.Compression.ADOBE_DEFLATE, lib.Compression.LZMA)
         tiled = (True, False)
         modes = ('w', 'w8')
 
@@ -313,39 +311,39 @@ class TestSuite(unittest.TestCase):
                               mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)
-                    t['photometric'] = photometric
+                    t['Photometric'] = photometric
 
                     w, h = expected.shape
-                    t['imagewidth'] = expected.shape[1]
-                    t['imagelength'] = expected.shape[0]
+                    t['ImageWidth'] = expected.shape[1]
+                    t['ImageLength'] = expected.shape[0]
 
-                    t['bitspersample'] = 8
-                    t['samplesperpixel'] = 1
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = 1
                     if tiled:
                         tw, th = int(w / 2), int(h / 2)
-                        t['tilelength'] = th
-                        t['tilewidth'] = tw
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
                     else:
                         rps = int(expected.shape[0] / 2)
-                        t['rowsperstrip'] = rps
-                    t['compression'] = compression
+                        t['RowsPerStrip'] = rps
+                    t['Compression'] = compression
 
                     t[:] = expected
 
                     del t
 
                     t = TIFF(tfile.name)
-                    self.assertEqual(t['photometric'], photometric)
-                    self.assertEqual(t['imagewidth'], w)
-                    self.assertEqual(t['imagelength'], h)
-                    self.assertEqual(t['bitspersample'], 8)
-                    self.assertEqual(t['samplesperpixel'], 1)
+                    self.assertEqual(t['Photometric'], photometric)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['BitsPerSample'], 8)
+                    self.assertEqual(t['SamplesPerPixel'], 1)
                     if tiled:
-                        self.assertEqual(t['tilewidth'], tw)
-                        self.assertEqual(t['tilelength'], th)
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
                     else:
-                        self.assertEqual(t['rowsperstrip'], rps)
-                    self.assertEqual(t['compression'], compression)
+                        self.assertEqual(t['RowsPerStrip'], rps)
+                    self.assertEqual(t['Compression'], compression)
 
                     actual = t[:]
 
@@ -357,46 +355,46 @@ class TestSuite(unittest.TestCase):
         strips do not equally partition the image.
 
         Expected Result:  The data should be round-trip the same for greyscale
-        photometric interpretations and lossless compression schemes.
+        photometric interpretations and lossless Compression schemes.
         """
         expected = skimage.data.camera()
 
         for tiled in True, False:
             with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                 t = TIFF(tfile.name, mode='w')
-                t['photometric'] = Photometric.MINISBLACK
+                t['Photometric'] = lib.Photometric.MINISBLACK
 
                 w, h = expected.shape
-                t['imagewidth'] = expected.shape[1]
-                t['imagelength'] = expected.shape[0]
+                t['ImageWidth'] = expected.shape[1]
+                t['ImageLength'] = expected.shape[0]
 
-                t['bitspersample'] = 8
-                t['samplesperpixel'] = 1
+                t['BitsPerSample'] = 8
+                t['SamplesPerPixel'] = 1
                 if tiled:
                     tw, th = 160, 160
-                    t['tilelength'] = th
-                    t['tilewidth'] = tw
+                    t['TileLength'] = th
+                    t['TileWidth'] = tw
                 else:
                     rps = 160
-                    t['rowsperstrip'] = rps
-                t['compression'] = Compression.NONE
+                    t['RowsPerStrip'] = rps
+                t['Compression'] = lib.Compression.NONE
 
                 t[:] = expected
 
                 del t
 
                 t = TIFF(tfile.name)
-                self.assertEqual(t['photometric'], Photometric.MINISBLACK)
-                self.assertEqual(t['imagewidth'], w)
-                self.assertEqual(t['imagelength'], h)
-                self.assertEqual(t['bitspersample'], 8)
-                self.assertEqual(t['samplesperpixel'], 1)
+                self.assertEqual(t['Photometric'], lib.Photometric.MINISBLACK)
+                self.assertEqual(t['ImageWidth'], w)
+                self.assertEqual(t['ImageLength'], h)
+                self.assertEqual(t['BitsPerSample'], 8)
+                self.assertEqual(t['SamplesPerPixel'], 1)
                 if tiled:
-                    self.assertEqual(t['tilewidth'], tw)
-                    self.assertEqual(t['tilelength'], th)
+                    self.assertEqual(t['TileWidth'], tw)
+                    self.assertEqual(t['TileLength'], th)
                 else:
-                    self.assertEqual(t['rowsperstrip'], rps)
-                self.assertEqual(t['compression'], Compression.NONE)
+                    self.assertEqual(t['RowsPerStrip'], rps)
+                self.assertEqual(t['Compression'], lib.Compression.NONE)
 
                 actual = t[:]
 
@@ -408,47 +406,47 @@ class TestSuite(unittest.TestCase):
         The tiles and strips do not equally partition the image.
 
         Expected Result:  The data should be round-trip the same for RGB
-        photometric interpretations and lossless compression schemes.
+        photometric interpretations and lossless Compression schemes.
         """
         expected = skimage.data.astronaut()
 
         for tiled in True, False:
             with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                 t = TIFF(tfile.name, mode='w')
-                t['photometric'] = Photometric.RGB
+                t['Photometric'] = lib.Photometric.RGB
 
                 w, h, spp = expected.shape
-                t['imagewidth'] = w
-                t['imagelength'] = h
-                t['samplesperpixel'] = spp
-                t['planarconfig'] = PlanarConfig.CONTIG
+                t['ImageWidth'] = w
+                t['ImageLength'] = h
+                t['SamplesPerPixel'] = spp
+                t['PlanarConfig'] = lib.PlanarConfig.CONTIG
 
-                t['bitspersample'] = 8
+                t['BitsPerSample'] = 8
                 if tiled:
                     tw, th = 160, 160
-                    t['tilelength'] = th
-                    t['tilewidth'] = tw
+                    t['TileLength'] = th
+                    t['TileWidth'] = tw
                 else:
                     rps = 160
-                    t['rowsperstrip'] = rps
-                t['compression'] = Compression.NONE
+                    t['RowsPerStrip'] = rps
+                t['Compression'] = lib.Compression.NONE
 
                 t[:] = expected
 
                 del t
 
                 t = TIFF(tfile.name)
-                self.assertEqual(t['photometric'], Photometric.RGB)
-                self.assertEqual(t['imagewidth'], w)
-                self.assertEqual(t['imagelength'], h)
-                self.assertEqual(t['bitspersample'], (8, 8, 8))
-                self.assertEqual(t['samplesperpixel'], 3)
+                self.assertEqual(t['Photometric'], lib.Photometric.RGB)
+                self.assertEqual(t['ImageWidth'], w)
+                self.assertEqual(t['ImageLength'], h)
+                self.assertEqual(t['BitsPerSample'], (8, 8, 8))
+                self.assertEqual(t['SamplesPerPixel'], 3)
                 if tiled:
-                    self.assertEqual(t['tilewidth'], tw)
-                    self.assertEqual(t['tilelength'], th)
+                    self.assertEqual(t['TileWidth'], tw)
+                    self.assertEqual(t['TileLength'], th)
                 else:
-                    self.assertEqual(t['rowsperstrip'], rps)
-                self.assertEqual(t['compression'], Compression.NONE)
+                    self.assertEqual(t['RowsPerStrip'], rps)
+                self.assertEqual(t['Compression'], lib.Compression.NONE)
 
                 actual = t[:]
 

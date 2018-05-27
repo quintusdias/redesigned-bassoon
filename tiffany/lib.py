@@ -53,12 +53,29 @@ class Compression(IntEnum):
     LZMA = 34925  # LZMA2
 
 
+class ExtraSamples(IntEnum):
+    """
+    Corresponds to EXTRASAM* values listed in tiff.h
+    """
+    UNSPECIFIED = 0
+    ASSOCALPHA = 1
+    UNASSALPHA = 2
+
+
 class FillOrder(IntEnum):
     """
     Corresponds to TIFFTAG_FILLORDER* values listed in tiff.h
     """
     MSB2LSB = 1  # most significant -> least
     LSB2MSB = 2  # least significant -> most
+
+
+class InkSet(IntEnum):
+    """
+    Corresponds to INKSET** values listed in tiff.h
+    """
+    CMYK = 1
+    MULTIINK = 2
 
 
 class Orientation(IntEnum):
@@ -127,6 +144,15 @@ class PlanarConfig(IntEnum):
     SEPARATE = 2  # separate planes of data
 
 
+class Predictor(IntEnum):
+    """
+    Corresponds to PREDICTOR* values listed in tiff.h
+    """
+    NONE = 1
+    HORIZONTAL = 2
+    FLOATINGPOINT = 3
+
+
 class ResolutionUnit(IntEnum):
     """
     Corresponds to RESUNIT* values listed in tiff.h
@@ -146,6 +172,24 @@ class SampleFormat(IntEnum):
     VOID = 4
     COMPLEXINT = 5
     COMPLEXIEEEP = 6
+
+
+class SubFileType(IntEnum):
+    """
+    Corresponds to FILETYPE* values listed in tiff.h
+    """
+    REDUCEDIMAGE = 1
+    PAGE = 2
+    MASK = 4
+
+
+class THRESHHOLDING(IntEnum):
+    """
+    Corresponds to THRESHHOLD* values listed in tiff.h
+    """
+    BILEVEL = 1
+    HALFTONE = 2
+    ERRORDIFFUSE = 3
 
 
 class T4Options(IntEnum):
@@ -242,9 +286,9 @@ def readEncodedStrip(fp, stripnum):
     ]
     _LIB.TIFFReadEncodedStrip.argtypes = ARGTYPES
     _LIB.TIFFReadEncodedStrip.restype = check_error
-    rps = getField(fp, 'rowsperstrip')
-    width = getField(fp, 'imagewidth')
-    spp = getField(fp, 'samplesperpixel')
+    rps = getField(fp, 'RowsPerStrip')
+    width = getField(fp, 'ImageWidth')
+    spp = getField(fp, 'SamplesPerPixel')
     shape = (rps, width, spp)
     image = np.zeros(shape, dtype=np.uint8)
     _LIB.TIFFReadEncodedStrip(fp, stripnum,
@@ -260,9 +304,9 @@ def readEncodedTile(fp, tilenum):
                 ctypes.c_int32]
     _LIB.TIFFReadEncodedTile.argtypes = ARGTYPES
     _LIB.TIFFReadEncodedTile.restype = check_error
-    tilelength = getField(fp, 'tilelength')
-    tilewidth = getField(fp, 'tilewidth')
-    spp = getField(fp, 'samplesperpixel')
+    tilelength = getField(fp, 'TileLength')
+    tilewidth = getField(fp, 'TileWidth')
+    spp = getField(fp, 'SamplesPerPixel')
     shape = (tilelength, tilewidth, spp)
     image = np.zeros(shape, dtype=np.uint8)
     _LIB.TIFFReadEncodedTile(fp, tilenum,

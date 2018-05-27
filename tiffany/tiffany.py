@@ -92,42 +92,42 @@ class TIFF(object):
         """
         Shortcut for the image height.
         """
-        return self['imagelength']
+        return self['ImageLength']
 
     @property
     def th(self):
         """
         Shortcut for the image tile height.
         """
-        return self['tilelength']
+        return self['TileLength']
 
     @property
     def w(self):
         """
         Shortcut for the image width.
         """
-        return self['imagewidth']
+        return self['ImageWidth']
 
     @property
     def tw(self):
         """
         Shortcut for the image tile width.
         """
-        return self['tilewidth']
+        return self['TileWidth']
 
     @property
     def rps(self):
         """
         Shortcut for the image rows per strip
         """
-        return self['rowsperstrip']
+        return self['RowsPerStrip']
 
     @property
     def spp(self):
         """
         Shortcut for the image depth
         """
-        return self['samplesperpixel']
+        return self['SamplesPerPixel']
 
     def __del__(self):
         """
@@ -225,11 +225,11 @@ class TIFF(object):
             self.tags[idx] = value
 
         elif isinstance(idx, slice):
-            if (((self['photometric'] == lib.Photometric.YCBCR) and
-                 (self['compression'] == lib.Compression.JPEG) and
-                 (self['jpegcolormode'] == lib.JPEGColorMode.RAW))):
+            if (((self['Photometric'] == lib.Photometric.YCBCR) and
+                 (self['Compression'] == lib.Compression.JPEG) and
+                 (self['JPEGColorMode'] == lib.JPEGColorMode.RAW))):
                 msg = (
-                    "You must set the jpegcolormode tag to "
+                    "You must set the JPEGColorMode tag to "
                     "JPEGColorMode.RGB in order to write to a YCbCr/JPEG "
                     "image."
                 )
@@ -267,7 +267,7 @@ class TIFF(object):
 
             image[rslice, :, :] = strip
 
-        if self['samplesperpixel'] == 1:
+        if self['SamplesPerPixel'] == 1:
             # squash the trailing dimension of 1.
             image = np.squeeze(image)
 
@@ -304,7 +304,7 @@ class TIFF(object):
 
                 image[rslice, cslice, :] = tile
 
-        if self['samplesperpixel'] == 1:
+        if self['SamplesPerPixel'] == 1:
             # squash the trailing dimension of 1.
             image = np.squeeze(image)
 
@@ -318,7 +318,7 @@ class TIFF(object):
             if self.rgba:
                 img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
                 return img
-            elif self['compression'] == lib.Compression.OJPEG:
+            elif self['Compression'] == lib.Compression.OJPEG:
                 if idx.start is None and idx.stop is None and idx.step is None:
                     # case is [:]
                     img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
@@ -330,9 +330,9 @@ class TIFF(object):
                 return self._readStrippedImage(slice)
 
         elif isinstance(idx, str):
-            if idx == 'jpegcolormode':
+            if idx == 'JPEGColorMode':
                 # This is a pseudo-tag that the user might not have set.
-                return lib.getFieldDefaulted(self.tfp, 'jpegcolormode')
+                return lib.getFieldDefaulted(self.tfp, 'JPEGColorMode')
             return self.tags[idx]
 
     def parse_ifd(self):
