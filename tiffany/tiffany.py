@@ -1,3 +1,5 @@
+# Standard libaries
+import datetime as dt
 import pathlib
 import struct
 
@@ -401,6 +403,10 @@ class TIFF(object):
         if dtype == 2:
             # ASCII
             payload = target_buffer.decode('utf-8').rstrip('\x00')
+
+            if tag_num == 306:
+                # Datetime
+                payload = dt.datetime.strptime(payload, '%Y:%m:%d %H:%M:%S')
 
         else:
             payload = struct.unpack(self.endian + fmt, target_buffer)

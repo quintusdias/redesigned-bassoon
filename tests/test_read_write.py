@@ -1,4 +1,5 @@
 # Local imports
+import datetime
 import itertools
 import pathlib
 import platform
@@ -79,6 +80,7 @@ class TestSuite(unittest.TestCase):
                     t = TIFF(tfile.name)
                     self.assertEqual(t['Photometric'], photometric)
                     self.assertEqual(t['PlanarConfig'], pc)
+                    self.assertEqual(t['Compression'], compression)
                     self.assertEqual(t['ImageWidth'], w)
                     self.assertEqual(t['ImageLength'], h)
                     self.assertEqual(t['BitsPerSample'], (8, 8, 8))
@@ -88,7 +90,6 @@ class TestSuite(unittest.TestCase):
                         self.assertEqual(t['TileLength'], th)
                     else:
                         self.assertEqual(t['RowsPerStrip'], rps)
-                    self.assertEqual(t['Compression'], compression)
 
                     actual = t[:]
 
@@ -451,3 +452,48 @@ class TestSuite(unittest.TestCase):
                 actual = t[:]
 
             np.testing.assert_equal(actual, expected)
+
+    def test_write_read_char_tags_datetime_tag(self):
+        """
+        Scenario: Write an image with char tags and the Datetime tag.  The
+        datetime tag value should be provided as a datetime.datetime value.
+
+        Expected Result:  The char tags should match roundtrip.
+        """
+        expected = skimage.data.astronaut()
+
+        with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+            t = TIFF(tfile.name, mode='w')
+            t['Photometric'] = lib.Photometric.RGB
+            t['Compression'] = lib.Compression.NONE
+
+            w, h, spp = expected.shape
+            t['ImageWidth'] = w
+            t['ImageLength'] = h
+            t['SamplesPerPixel'] = spp
+            t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+
+            t['BitsPerSample'] = 8
+
+            tw, th = 160, 160
+            t['TileLength'] = th
+            t['TileWidth'] = tw
+
+            t0 = datetime.datetime(2018, 5, 28, 12, 0)
+            t['Datetime'] = t0
+
+            software = 'Spacely Sprockets'
+            t['Software'] = software
+
+            t[:] = expected
+
+            del t
+
+            t = TIFF(tfile.name)
+
+            self.assertEqual(t['Software'], software)
+            self.assertEqual(t['Datetime'], t0)
+
+            actual = t[:]
+
+        np.testing.assert_equal(actual, expected)

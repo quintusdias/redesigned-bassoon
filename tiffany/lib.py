@@ -1,5 +1,6 @@
 # Standard library imports
 import ctypes
+import datetime
 from enum import IntEnum
 
 # Third party library imports
@@ -250,6 +251,12 @@ def setField(fp, tag, value):
 
     if tag_num == 530:
         _LIB.TIFFSetField(fp, tag_num, value[0], value[1])
+    elif tag_num == 306 and isinstance(value, datetime.datetime):
+        value = value.strftime('%Y:%m:%d %H:%M:%S').encode('utf-8')
+        _LIB.TIFFSetField(fp, tag_num, ctypes.c_char_p(value))
+    elif tag_type == ctypes.c_char_p:
+        value = value.encode('utf-8')
+        _LIB.TIFFSetField(fp, tag_num, ctypes.c_char_p(value))
     else:
         _LIB.TIFFSetField(fp, tag_num, value)
 

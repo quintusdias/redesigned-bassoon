@@ -48,19 +48,19 @@ TAGS = {
     },
     'DocumentName': {
         'number': 269,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'ImageDescription': {
         'number': 270,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'Make': {
         'number': 271,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'Model': {
         'number': 272,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'StripOffsets': {
         'number': 273,
@@ -104,7 +104,7 @@ TAGS = {
     },
     'PageName': {
         'number': 285,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'XPosition': {
         'number': 286,
@@ -152,19 +152,19 @@ TAGS = {
     },
     'Software': {
         'number': 305,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'Datetime': {
         'number': 306,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'Artist': {
         'number': 315,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'HostComputer': {
         'number': 316,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'Predictor': {
         'number': 317,
@@ -220,7 +220,7 @@ TAGS = {
     },
     'InkNames': {
         'number': 333,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'NumberOfInks': {
         'number': 334,
@@ -393,7 +393,7 @@ TAGS = {
     },
     'Copyright': {
         'number': 33432,
-        'type': ctypes.c_char,
+        'type': ctypes.c_char_p,
     },
     'MDFile': {
         'number': 33445,
