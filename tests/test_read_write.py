@@ -26,6 +26,74 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
+    def test_write_read_floating_point_minisblack(self):
+        """
+        Scenario: Write the scikit-image "stereo_motorcycle" as minisblack and
+        floating point.
+
+        Expected Result:  The image should be lossless.
+        """
+        _, _, motorcycle = skimage.data.stereo_motorcycle()
+
+        photo = lib.Photometric.MINISBLACK
+        comp = lib.Compression.NONE
+        sf = lib.SampleFormat.IEEEFP
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+        bpss = (32, 64)
+
+        g = itertools.product(tiled, modes, bpss)
+        for tiled, mode, bps in g:
+            with self.subTest(tiled=tiled, mode=mode, bps=bps):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+
+                    if bps == 64:
+                        expected = motorcycle.astype(np.float64)
+                    else:
+                        expected = motorcycle.astype(np.float32)
+
+                    t = TIFF(tfile.name, mode=mode)
+                    t['Photometric'] = photo
+                    t['Compression'] = comp
+                    t['SampleFormat'] = sf
+                    t['BitsPerSample'] = bps
+                    t['SamplesPerPixel'] = 1
+
+                    h, w = expected.shape
+                    t['ImageWidth'] = expected.shape[1]
+                    t['ImageLength'] = expected.shape[0]
+
+                    if tiled:
+                        tw, th = 256, 256
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
+                    else:
+                        rps = 256
+                        t['RowsPerStrip'] = rps
+
+                    t[:] = expected
+
+                    del t
+
+                    t = TIFF(tfile.name)
+                    self.assertEqual(t['Photometric'], photo)
+                    self.assertEqual(t['Compression'], comp)
+                    self.assertEqual(t['SampleFormat'], sf)
+                    self.assertEqual(t['BitsPerSample'], bps)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['SamplesPerPixel'], 1)
+                    if tiled:
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
+                    else:
+                        self.assertEqual(t['RowsPerStrip'], rps)
+
+                    actual = t[:]
+
+                np.testing.assert_array_equal(actual, expected)
+
     def test_write_read_ycbcr_jpeg_rgb(self):
         """
         Scenario: Write the scikit-image "astronaut" as ycbcr/jpeg.

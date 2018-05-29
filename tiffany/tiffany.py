@@ -285,13 +285,13 @@ class TIFF(object):
         elif self.bps == 32 and self.sf == lib.SampleFormat.INT:
             return np.int32
         elif self.bps == 32 and self.sf == lib.SampleFormat.IEEEFP:
-            return np.float
+            return np.float32
         elif self.bps == 64 and self.sf == lib.SampleFormat.UINT:
             return np.uint64
         elif self.bps == 64 and self.sf == lib.SampleFormat.INT:
             return np.int64
         elif self.bps == 64 and self.sf == lib.SampleFormat.IEEEFP:
-            return np.double
+            return np.float64
 
     def _readStrippedImage(self, idx):
         """
