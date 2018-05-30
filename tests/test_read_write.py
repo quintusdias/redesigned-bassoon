@@ -214,6 +214,77 @@ class TestSuite(unittest.TestCase):
                     with self.assertRaises(JPEGColorModeRawError):
                         t[:] = ycbcr
 
+    def test_write_read_alpha(self):
+        """
+        Scenario: Write the scikit-image "astronaut" with an alpha layer.
+
+        Expected Result:  The image should be lossless.
+        """
+        # Create a gradient alpha layer.
+        x = np.arange(0, 256, 0.5).astype(np.uint8).reshape(512, 1)
+        alpha = np.repeat(x, 512, axis=1).reshape((512, 512, 1))
+
+        expected = np.concatenate((skimage.data.astronaut(), alpha), axis=2)
+        w, h, nz = expected.shape
+        tw, th, rps = 256, 256, 256
+
+        photo = lib.Photometric.RGB
+        compression = lib.Compression.NONE
+        pc = lib.PlanarConfig.CONTIG
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+        extra_samples = (
+            lib.ExtraSamples.UNSPECIFIED,
+            lib.ExtraSamples.ASSOCALPHA,
+            lib.ExtraSamples.UNASSALPHA
+        )
+
+        g = itertools.product(tiled, modes, extra_samples)
+        for tiled, mode, alpha in g:
+            with self.subTest(tiled=tiled, mode=mode, alpha=alpha):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                    t = TIFF(tfile.name, mode=mode)
+                    t['Photometric'] = photo
+                    t['Compression'] = compression
+
+                    t['ImageWidth'] = w
+                    t['ImageLength'] = h
+                    t['PlanarConfig'] = pc
+                    t['ExtraSamples'] = alpha
+
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = nz
+                    if tiled:
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
+                    else:
+                        t['RowsPerStrip'] = rps
+
+                    t[:] = expected
+
+                    del t
+
+                    t = TIFF(tfile.name)
+                    self.assertEqual(t['Photometric'], photo)
+                    self.assertEqual(t['PlanarConfig'], pc)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['BitsPerSample'], (8, 8, 8, 8))
+                    self.assertEqual(t['SamplesPerPixel'], nz)
+                    if tiled:
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
+                    else:
+                        self.assertEqual(t['RowsPerStrip'], rps)
+                    self.assertEqual(t['Compression'], compression)
+
+                    self.assertEqual(t['ExtraSamples'], alpha)
+
+                    actual = t[:]
+
+                np.testing.assert_equal(actual, expected)
+
     def test_write_read_rgb_jpeg(self):
         """
         Scenario: Write the scikit-image "astronaut" as rgb/jpeg.
