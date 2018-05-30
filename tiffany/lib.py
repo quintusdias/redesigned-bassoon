@@ -242,14 +242,31 @@ def setField(fp, tag, value):
     # Append the proper return type for the tag.
     tag_num = TAGS[tag]['number']
     tag_type = TAGS[tag]['type']
-    if tag_num == 530:
+    if tag_num == 338:
+        ARGTYPES.extend([ctypes.c_uint16, ctypes.POINTER(ctypes.c_uint16)])
+    elif tag_num == 530:
         ARGTYPES.extend(tag_type)
     else:
         ARGTYPES.append(tag_type)
     _LIB.TIFFSetField.argtypes = ARGTYPES
     _LIB.TIFFSetField.restype = check_error
 
-    if tag_num == 530:
+    if tag_num == 338:
+        # We pass a count and an array of values.
+        try:
+            n = len(value)
+        except TypeError:
+            # singleton?
+            n = 1
+            value = [value]
+
+        arr = (ctypes.c_uint16 * n)()
+        for j in range(n):
+            arr[j] = value[j]
+
+        _LIB.TIFFSetField(fp, tag_num, n, arr)
+
+    elif tag_num == 530:
         _LIB.TIFFSetField(fp, tag_num, value[0], value[1])
     elif tag_num == 306 and isinstance(value, datetime.datetime):
         value = value.strftime('%Y:%m:%d %H:%M:%S').encode('utf-8')
