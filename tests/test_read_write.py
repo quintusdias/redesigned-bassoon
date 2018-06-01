@@ -26,6 +26,73 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
+    def test_write_read_separated_non_cmyk(self):
+        """
+        Scenario: Write the scikit-image "astronaut" as separated with a
+        non-cmyk inkset.
+
+        Expected Result:  InkSet, NumberOfInks, and InkNames should validate.
+        """
+        expected = skimage.data.astronaut()
+
+        photo = lib.Photometric.SEPARATED
+        comp = lib.Compression.NONE
+        pc = lib.PlanarConfig.CONTIG
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+
+        g = itertools.product(tiled, modes)
+        for tiled, mode in g:
+            with self.subTest(tiled=tiled, mode=mode):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+
+                    t = TIFF(tfile.name, mode=mode)
+                    t['Photometric'] = photo
+                    t['Compression'] = comp
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = 3
+                    t['PlanarConfig'] = pc
+
+                    h, w, nz = expected.shape
+                    t['ImageWidth'] = w
+                    t['ImageLength'] = h
+
+                    if tiled:
+                        tw, th = 256, 256
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
+                    else:
+                        rps = 256
+                        t['RowsPerStrip'] = rps
+
+                    t['InkSet'] = lib.InkSet.MULTIINK
+                    t['NumberOfInks'] = 3
+                    t['InkNames'] = ('R', 'G', 'B')
+
+                    t[:] = expected
+
+                    del t
+
+                    t = TIFF(tfile.name)
+                    self.assertEqual(t['Photometric'], photo)
+                    self.assertEqual(t['Compression'], comp)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['SamplesPerPixel'], 3)
+                    if tiled:
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
+                    else:
+                        self.assertEqual(t['RowsPerStrip'], rps)
+                    self.assertEqual(t['InkSet'], lib.InkSet.MULTIINK)
+                    self.assertEqual(t['NumberOfInks'], 3)
+                    self.assertEqual(t['InkNames'], ('R', 'G', 'B'))
+
+                    actual = t[:]
+
+                np.testing.assert_array_equal(actual, expected)
+
     def test_write_read_floating_point_minisblack(self):
         """
         Scenario: Write the scikit-image "stereo_motorcycle" as minisblack and

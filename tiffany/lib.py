@@ -242,7 +242,10 @@ def setField(fp, tag, value):
     # Append the proper return type for the tag.
     tag_num = TAGS[tag]['number']
     tag_type = TAGS[tag]['type']
-    if tag_num == 338:
+    if tag_num == 333:
+        # InkNames
+        ARGTYPES.extend([ctypes.c_uint16, ctypes.c_char_p])
+    elif tag_num == 338:
         ARGTYPES.extend([ctypes.c_uint16, ctypes.POINTER(ctypes.c_uint16)])
     elif tag_num == 530:
         ARGTYPES.extend(tag_type)
@@ -251,7 +254,15 @@ def setField(fp, tag, value):
     _LIB.TIFFSetField.argtypes = ARGTYPES
     _LIB.TIFFSetField.restype = check_error
 
-    if tag_num == 338:
+    if tag_num == 333:
+        # Input is an iterable of strings.  Turn it into a null-terminated and
+        # null-separated single string.
+        inks = '\0'.join(value) + '\0'
+        inks = inks.encode('utf-8')
+        n = len(inks)
+        _LIB.TIFFSetField(fp, tag_num, n, ctypes.c_char_p(inks))
+
+    elif tag_num == 338:
         # We pass a count and an array of values.
         try:
             n = len(value)

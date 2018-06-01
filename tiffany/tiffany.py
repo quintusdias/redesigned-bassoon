@@ -240,6 +240,8 @@ class TIFF(object):
     def __setitem__(self, idx, value):
         """
         Set a tag value or write part/all of an image.
+
+        InkNames : Should be an iterable of strings.
         """
         if idx in self.tagnum2name.values():
 
@@ -484,7 +486,10 @@ class TIFF(object):
         tag_name = self.tagnum2name[tag_num]
 
         # Special processing?
-        if tag_num == 42112:
+        if tag_num == 333:
+            # InkNames
+            payload = tuple(payload.split('\0'))
+        elif tag_num == 42112:
             # GDAL_METADATA is an XML fragment.
             payload = etree.fromstring(payload)
 
