@@ -7,6 +7,7 @@ import struct
 from lxml import etree
 import numpy as np
 
+# Local imports
 from . import lib
 from . import tags
 
@@ -56,6 +57,7 @@ class TIFF(object):
         mode : str
             File access mode.
         """
+
         if isinstance(path, str):
             self.path = pathlib.Path(path)
         else:
@@ -376,27 +378,28 @@ class TIFF(object):
         """
         if isinstance(idx, slice):
             if self.rgba:
-                img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
-                return img
+                item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
             elif self['Compression'] == lib.Compression.OJPEG:
                 if idx.start is None and idx.stop is None and idx.step is None:
                     # case is [:]
-                    img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
-                    img = img[:, :, :3]
-                    return img
+                    item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
+                    item = item[:, :, :3]
             elif lib.isTiled(self.tfp):
-                return self._readTiledImage(slice)
+                item = self._readTiledImage(slice)
             else:
-                return self._readStrippedImage(slice)
+                item = self._readStrippedImage(slice)
 
         elif isinstance(idx, str):
             if idx == 'JPEGColorMode':
                 # This is a pseudo-tag that the user might not have set.
-                return lib.getFieldDefaulted(self.tfp, 'JPEGColorMode')
+                item = lib.getFieldDefaulted(self.tfp, 'JPEGColorMode')
             elif idx == 'SampleFormat':
                 # This is a tag that the user might not have set.
-                return lib.getFieldDefaulted(self.tfp, 'SampleFormat')
-            return self.tags[idx]
+                item = lib.getFieldDefaulted(self.tfp, 'SampleFormat')
+            else:
+                item = self.tags[idx]
+
+        return item
 
     def parse_ifd(self):
         """
