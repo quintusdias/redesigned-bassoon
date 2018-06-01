@@ -453,6 +453,25 @@ def RGBAImageOK(fp):
         raise NotRGBACompatibleError(error_message)
 
 
+# Set the function types for the warning handler.
+_WFUNCTYPE = ctypes.CFUNCTYPE(
+    ctypes.c_void_p, # return type of warning handler, void *
+    ctypes.c_char_p, # module
+    ctypes.c_char_p, # fmt
+    ctypes.c_void_p  # va_list
+)
+
+def setWarningHandler(func):
+    # The signature of the warning handler is 
+    #
+    # const char *module, const char *fmt, va_list ap
+    #
+    # The return type is void *
+    _LIB.TIFFSetWarningHandler.argtypes = [_WFUNCTYPE]
+    _LIB.TIFFSetWarningHandler.restype = _WFUNCTYPE
+    old_warning_handler = _LIB.TIFFSetWarningHandler(func)
+    return old_warning_handler
+
 def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
     """
     Corresponds to TIFFWriteEncodedStrip.

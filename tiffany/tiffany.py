@@ -1,7 +1,10 @@
 # Standard libaries
+import ctypes
 import datetime as dt
 import pathlib
+import queue
 import struct
+import warnings
 
 # 3rd party libraries
 from lxml import etree
@@ -11,6 +14,9 @@ from . import lib
 from . import tags
 
 
+# The warning messages queue
+WQ = queue.Queue()
+
 class JPEGColorModeRawError(RuntimeError):
     """
     Raise this exception if an attempt is made to write YCbCr/JPEG images with
@@ -18,6 +24,25 @@ class JPEGColorModeRawError(RuntimeError):
     """
     pass
 
+
+libc = ctypes.CDLL(ctypes.util.find_library('c'))
+def _handle_warning(module, fmt, ap):
+    # Use VSPRINTF in the C library to put together the warning message.
+    # int vsprintf(char * buffer, const char * restrict format, va_list ap);
+    buffer = ctypes.create_string_buffer(1000)
+
+    libc.vsprintf.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    libc.vsprintf.restype = ctypes.c_int32
+    n = libc.vsprintf(buffer, fmt, ap)
+
+    module = module.decode('utf-8')
+    warning_str = buffer.value.decode('utf-8')
+
+    message = f"{module}: {warning_str}"
+    WQ.put(message)
+    return None
+
+_warning_handler = lib._WFUNCTYPE(_handle_warning)
 
 class TIFF(object):
     """
@@ -56,6 +81,7 @@ class TIFF(object):
         mode : str
             File access mode.
         """
+        self.old_warning_handler = lib.setWarningHandler(_warning_handler)
         if isinstance(path, str):
             self.path = pathlib.Path(path)
         else:
@@ -376,28 +402,34 @@ class TIFF(object):
         """
         if isinstance(idx, slice):
             if self.rgba:
-                img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
-                return img
+                item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
             elif self['Compression'] == lib.Compression.OJPEG:
                 if idx.start is None and idx.stop is None and idx.step is None:
                     # case is [:]
-                    img = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
-                    img = img[:, :, :3]
-                    return img
+                    item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
+                    item = item[:, :, :3]
             elif lib.isTiled(self.tfp):
-                return self._readTiledImage(slice)
+                item = self._readTiledImage(slice)
             else:
-                return self._readStrippedImage(slice)
+                item = self._readStrippedImage(slice)
 
         elif isinstance(idx, str):
             if idx == 'JPEGColorMode':
                 # This is a pseudo-tag that the user might not have set.
-                return lib.getFieldDefaulted(self.tfp, 'JPEGColorMode')
+                item = lib.getFieldDefaulted(self.tfp, 'JPEGColorMode')
             elif idx == 'SampleFormat':
                 # This is a tag that the user might not have set.
-                return lib.getFieldDefaulted(self.tfp, 'SampleFormat')
-            return self.tags[idx]
+                item = lib.getFieldDefaulted(self.tfp, 'SampleFormat')
+            else:
+                item = self.tags[idx]
 
+        self._check_for_warnings()
+        return item
+
+    def _check_for_warnings(self):
+        while not WQ.empty():
+            warnings.warn(WQ.get())
+    
     def parse_ifd(self):
         """
         Parse the TIFF for metadata.
