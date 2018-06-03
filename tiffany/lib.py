@@ -2,6 +2,7 @@
 import ctypes
 import datetime
 from enum import IntEnum
+import queue
 
 # Third party library imports
 import numpy as np
@@ -11,6 +12,56 @@ from . import config
 from .tags import TAGS
 
 _LIBTIFF, _LIBC = config.load_libraries('tiff', 'c')
+
+# The warning messages queue
+WQ = queue.Queue()
+
+# The error messages queue
+EQ = queue.Queue()
+
+def _handle_error(module, fmt, ap):
+    # Use VSPRINTF in the C library to put together the error message.
+    # int vsprintf(char * buffer, const char * restrict format, va_list ap);
+    buffer = ctypes.create_string_buffer(1000)
+
+    _LIBC.vsprintf.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    _LIBC.vsprintf.restype = ctypes.c_int32
+    n = _LIBC.vsprintf(buffer, fmt, ap)
+
+    module = module.decode('utf-8')
+    error_str = buffer.value.decode('utf-8')
+
+    message = f"{module}: {error_str}"
+    EQ.put(message)
+    return None
+
+def _handle_warning(module, fmt, ap):
+    # Use VSPRINTF in the C library to put together the warning message.
+    # int vsprintf(char * buffer, const char * restrict format, va_list ap);
+    buffer = ctypes.create_string_buffer(1000)
+
+    _LIBC.vsprintf.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    _LIBC.vsprintf.restype = ctypes.c_int32
+    n = _LIBC.vsprintf(buffer, fmt, ap)
+
+    module = module.decode('utf-8')
+    warning_str = buffer.value.decode('utf-8')
+
+    message = f"{module}: {warning_str}"
+    WQ.put(message)
+    return None
+
+# Set the function types for the warning handler.
+_WFUNCTYPE = ctypes.CFUNCTYPE(
+    ctypes.c_void_p, # return type of warning handler, void *
+    ctypes.c_char_p, # module
+    ctypes.c_char_p, # fmt
+    ctypes.c_void_p  # va_list
+)
+
+_ERROR_HANDLER = _WFUNCTYPE(_handle_error)
+_WARNING_HANDLER = _WFUNCTYPE(_handle_warning)
+
 
 
 class NotRGBACompatibleError(RuntimeError):
@@ -453,15 +504,7 @@ def RGBAImageOK(fp):
         raise NotRGBACompatibleError(error_message)
 
 
-# Set the function types for the warning handler.
-_WFUNCTYPE = ctypes.CFUNCTYPE(
-    ctypes.c_void_p, # return type of warning handler, void *
-    ctypes.c_char_p, # module
-    ctypes.c_char_p, # fmt
-    ctypes.c_void_p  # va_list
-)
-
-def setErrorHandler(func):
+def setErrorHandler(func=_ERROR_HANDLER):
     # The signature of the error handler is 
     #
     # const char *module, const char *fmt, va_list ap
@@ -472,7 +515,7 @@ def setErrorHandler(func):
     old_error_handler = _LIBTIFF.TIFFSetErrorHandler(func)
     return old_error_handler
 
-def setWarningHandler(func):
+def setWarningHandler(func=_WARNING_HANDLER):
     # The signature of the warning handler is 
     #
     # const char *module, const char *fmt, va_list ap
