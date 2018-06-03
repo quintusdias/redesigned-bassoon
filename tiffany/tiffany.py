@@ -1,5 +1,4 @@
 # Standard libaries
-import ctypes
 import datetime as dt
 import pathlib
 import struct
@@ -8,6 +7,7 @@ import struct
 from lxml import etree
 import numpy as np
 
+# Local imports
 from . import lib
 from . import tags
 
@@ -16,13 +16,6 @@ class JPEGColorModeRawError(RuntimeError):
     """
     Raise this exception if an attempt is made to write YCbCr/JPEG images with
     JPEGCOLORMODERAW instead of JPEGCOLORMODERGB.
-    """
-    pass
-
-
-class LibTIFFError(RuntimeError):
-    """
-    Raise this exception if we detect a generic error from libtiff.
     """
     pass
 
@@ -64,8 +57,6 @@ class TIFF(object):
         mode : str
             File access mode.
         """
-        self.old_error_handler = lib.setErrorHandler()
-        self.old_warning_handler = lib.setWarningHandler()
 
         if isinstance(path, str):
             self.path = pathlib.Path(path)
@@ -281,8 +272,6 @@ class TIFF(object):
             msg = f"Unhandled:  {idx}"
             raise RuntimeError(msg)
 
-        self._check_for_errors()
-
     def _determine_datatype(self):
         """
         Determine the datatype for incoming imagery.
@@ -412,12 +401,6 @@ class TIFF(object):
 
         return item
 
-    def _check_for_errors(self):
-        msg = ''
-        while not lib.EQ.empty():
-            msg = lib.EQ.get()
-            raise LibTIFFError(msg)
-    
     def parse_ifd(self):
         """
         Parse the TIFF for metadata.

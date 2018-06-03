@@ -13,7 +13,8 @@ import skimage.data
 import skimage.measure
 
 # Local imports
-from tiffany.tiffany import TIFF, JPEGColorModeRawError, LibTIFFError
+from tiffany.tiffany import TIFF, JPEGColorModeRawError
+from tiffany.lib import LibTIFFError
 from tiffany import lib
 
 
@@ -207,7 +208,6 @@ class TestSuite(unittest.TestCase):
         subsamplings = ((1, 1), (1, 2), (2, 1), (2, 2))
         tiled = (True, False)
         modes = ('w', 'w8')
-        count = -1
 
         g = itertools.product(
             photometrics, Compressions, planars, tiled, subsamplings, modes

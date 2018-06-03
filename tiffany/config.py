@@ -4,6 +4,7 @@ Configure glymur to use installed libraries if possible.
 import ctypes
 from ctypes.util import find_library
 import os
+import pathlib
 import platform
 import sys
 import warnings
@@ -22,6 +23,7 @@ def load_libraries(*pargs):
         lst.append(handle)
 
     return tuple(lst)
+
 
 def load_library(name):
 

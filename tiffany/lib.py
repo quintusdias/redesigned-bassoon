@@ -14,17 +14,45 @@ from .tags import TAGS
 
 _LIBTIFF, _LIBC = config.load_libraries('tiff', 'c')
 
+
+class LibTIFFError(RuntimeError):
+    """
+    Raise this exception if we detect a generic error from libtiff.
+    """
+    pass
+
+
 # The error messages queue
 EQ = queue.Queue()
+
+
+def _set_error_warning_handlers():
+    """
+    Setup default python error and warning handlers.
+    """
+    old_warning_handler = setWarningHandler()
+    old_error_handler = setErrorHandler()
+
+    return old_error_handler, old_warning_handler
+
+
+def _reset_error_warning_handlers(old_error_handler, old_warning_handler):
+    """
+    Restore previous error and warning handlers.
+    """
+    setWarningHandler(old_warning_handler)
+    setErrorHandler(old_error_handler)
+
 
 def _handle_error(module, fmt, ap):
     # Use VSPRINTF in the C library to put together the error message.
     # int vsprintf(char * buffer, const char * restrict format, va_list ap);
     buffer = ctypes.create_string_buffer(1000)
 
-    _LIBC.vsprintf.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    _LIBC.vsprintf.argtypes = argtypes
     _LIBC.vsprintf.restype = ctypes.c_int32
-    n = _LIBC.vsprintf(buffer, fmt, ap)
+    _LIBC.vsprintf(buffer, fmt, ap)
 
     module = module.decode('utf-8')
     error_str = buffer.value.decode('utf-8')
@@ -33,14 +61,16 @@ def _handle_error(module, fmt, ap):
     EQ.put(message)
     return None
 
+
 def _handle_warning(module, fmt, ap):
     # Use VSPRINTF in the C library to put together the warning message.
     # int vsprintf(char * buffer, const char * restrict format, va_list ap);
     buffer = ctypes.create_string_buffer(1000)
 
-    _LIBC.vsprintf.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    _LIBC.vsprintf.argtypes = argtypes
     _LIBC.vsprintf.restype = ctypes.c_int32
-    n = _LIBC.vsprintf(buffer, fmt, ap)
+    _LIBC.vsprintf(buffer, fmt, ap)
 
     module = module.decode('utf-8')
     warning_str = buffer.value.decode('utf-8')
@@ -48,17 +78,17 @@ def _handle_warning(module, fmt, ap):
     message = f"{module}: {warning_str}"
     warnings.warn(message)
 
+
 # Set the function types for the warning handler.
 _WFUNCTYPE = ctypes.CFUNCTYPE(
-    ctypes.c_void_p, # return type of warning handler, void *
-    ctypes.c_char_p, # module
-    ctypes.c_char_p, # fmt
+    ctypes.c_void_p,  # return type of warning handler, void *
+    ctypes.c_char_p,  # module
+    ctypes.c_char_p,  # fmt
     ctypes.c_void_p  # va_list
 )
 
 _ERROR_HANDLER = _WFUNCTYPE(_handle_error)
 _WARNING_HANDLER = _WFUNCTYPE(_handle_warning)
-
 
 
 class NotRGBACompatibleError(RuntimeError):
@@ -262,22 +292,31 @@ def close(fp):
     """
     Corresponds to TIFFClose
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p]
     _LIBTIFF.TIFFClose.argtypes = ARGTYPES
     _LIBTIFF.TIFFClose.restype = None
     _LIBTIFF.TIFFClose(fp)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
 
 
 def open(filename, mode='r'):
     """
     Corresponds to TIFFOpen
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_char_p, ctypes.c_char_p]
     _LIBTIFF.TIFFOpen.argtypes = ARGTYPES
     _LIBTIFF.TIFFOpen.restype = ctypes.c_void_p
     file_argument = ctypes.c_char_p(filename.encode())
     mode_argument = ctypes.c_char_p(mode.encode())
     fp = _LIBTIFF.TIFFOpen(file_argument, mode_argument)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return fp
 
 
@@ -285,6 +324,8 @@ def setField(fp, tag, value):
     """
     Corresponds to TIFFSetField
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
     # Append the proper return type for the tag.
@@ -336,15 +377,22 @@ def setField(fp, tag, value):
     else:
         _LIBTIFF.TIFFSetField(fp, tag_num, value)
 
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
 
 def computeStrip(fp, row, sample):
     """
     Corresponds to TIFFComputeStrip
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint16]
     _LIBTIFF.TIFFComputeStrip.argtypes = ARGTYPES
     _LIBTIFF.TIFFComputeStrip.restype = ctypes.c_uint32
     stripnum = _LIBTIFF.TIFFComputeStrip(fp, row, sample)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return stripnum
 
 
@@ -352,11 +400,16 @@ def computeTile(fp, x, y, sample):
     """
     Corresponds to TIFFComputeTile
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32,
                 ctypes.c_uint16]
     _LIBTIFF.TIFFComputeTile.argtypes = ARGTYPES
     _LIBTIFF.TIFFComputeTile.restype = ctypes.c_uint32
     tilenum = _LIBTIFF.TIFFComputeTile(fp, x, y, sample)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return tilenum
 
 
@@ -364,13 +417,18 @@ def readEncodedStrip(fp, stripnum, strip):
     """
     Corresponds to TIFFReadEncodedStrip
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [
         ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_int32
     ]
     _LIBTIFF.TIFFReadEncodedStrip.argtypes = ARGTYPES
     _LIBTIFF.TIFFReadEncodedStrip.restype = check_error
     _LIBTIFF.TIFFReadEncodedStrip(fp, stripnum,
-                              strip.ctypes.data_as(ctypes.c_void_p), -1)
+                                  strip.ctypes.data_as(ctypes.c_void_p), -1)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return strip
 
 
@@ -378,16 +436,26 @@ def readEncodedTile(fp, tilenum, tile):
     """
     Corresponds to TIFFComputeTile
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p,
                 ctypes.c_int32]
     _LIBTIFF.TIFFReadEncodedTile.argtypes = ARGTYPES
     _LIBTIFF.TIFFReadEncodedTile.restype = check_error
     _LIBTIFF.TIFFReadEncodedTile(fp, tilenum,
-                             tile.ctypes.data_as(ctypes.c_void_p), -1)
+                                 tile.ctypes.data_as(ctypes.c_void_p), -1)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return tile
 
 
 def getField(fp, tag):
+    """
+    Corresponds to TIFFGetField in the TIFF library.
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
     tag_num = TAGS[tag]['number']
@@ -402,10 +470,18 @@ def getField(fp, tag):
     # instantiate the tag value
     item = tag_type()
     _LIBTIFF.TIFFGetField(fp, tag_num, ctypes.byref(item))
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return item.value
 
 
 def getFieldDefaulted(fp, tag):
+    """
+    Corresponds to the TIFFGetFieldDefaulted library routine.
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
     tag_num = TAGS[tag]['number']
@@ -420,6 +496,9 @@ def getFieldDefaulted(fp, tag):
     # instantiate the tag value
     item = tag_type()
     _LIBTIFF.TIFFGetFieldDefaulted(fp, tag_num, ctypes.byref(item))
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return item.value
 
 
@@ -427,12 +506,17 @@ def isTiled(fp):
     """
     Corresponds to TIFFIsTiled
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p]
 
     _LIBTIFF.TIFFIsTiled.argtypes = ARGTYPES
     _LIBTIFF.TIFFIsTiled.restype = ctypes.c_int
 
     status = _LIBTIFF.TIFFIsTiled(fp)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return status
 
 
@@ -440,11 +524,16 @@ def numberOfStrips(fp):
     """
     Corresponds to TIFFNumberOfStrips.
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p]
     _LIBTIFF.TIFFNumberOfStrips.argtypes = ARGTYPES
     _LIBTIFF.TIFFNumberOfStrips.restype = ctypes.c_uint32
 
     n = _LIBTIFF.TIFFNumberOfStrips(fp)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return n
 
 
@@ -452,11 +541,16 @@ def numberOfTiles(fp):
     """
     Corresponds to TIFFNumberOfTiles.
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [ctypes.c_void_p]
     _LIBTIFF.TIFFNumberOfTiles.argtypes = ARGTYPES
     _LIBTIFF.TIFFNumberOfTiles.restype = ctypes.c_uint32
 
     numtiles = _LIBTIFF.TIFFNumberOfTiles(fp)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return numtiles
 
 
@@ -472,6 +566,8 @@ def readRGBAImageOriented(fp, width=None, height=None,
         int orientation, int stopOnError
     )
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [
         ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32,
         ctypes.POINTER(ctypes.c_uint32), ctypes.c_int32, ctypes.c_int32
@@ -483,7 +579,10 @@ def readRGBAImageOriented(fp, width=None, height=None,
     img = np.zeros((height, width, 4), dtype=np.uint8)
     raster = img.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
     _LIBTIFF.TIFFReadRGBAImageOriented(fp, width, height, raster, orientation,
-                                   stopOnError)
+                                       stopOnError)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
     return img
 
 
@@ -491,6 +590,8 @@ def RGBAImageOK(fp):
     """
     Corresponds to TIFFRGBAImageOK.
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     emsg = ctypes.create_string_buffer(1024)
     ARGTYPES = [ctypes.c_void_p, ctypes.c_char_p]
     _LIBTIFF.TIFFRGBAImageOK.argtypes = ARGTYPES
@@ -500,11 +601,12 @@ def RGBAImageOK(fp):
         error_message = f"libtiff:  {emsg.value.decode('utf-8')}"
         raise NotRGBACompatibleError(error_message)
 
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
 
 def setErrorHandler(func=_ERROR_HANDLER):
-    # The signature of the error handler is 
-    #
-    # const char *module, const char *fmt, va_list ap
+    # The signature of the error handler is
+    #     const char *module, const char *fmt, va_list ap
     #
     # The return type is void *
     _LIBTIFF.TIFFSetErrorHandler.argtypes = [_WFUNCTYPE]
@@ -512,10 +614,10 @@ def setErrorHandler(func=_ERROR_HANDLER):
     old_error_handler = _LIBTIFF.TIFFSetErrorHandler(func)
     return old_error_handler
 
+
 def setWarningHandler(func=_WARNING_HANDLER):
-    # The signature of the warning handler is 
-    #
-    # const char *module, const char *fmt, va_list ap
+    # The signature of the warning handler is
+    #     const char *module, const char *fmt, va_list ap
     #
     # The return type is void *
     _LIBTIFF.TIFFSetWarningHandler.argtypes = [_WFUNCTYPE]
@@ -523,10 +625,13 @@ def setWarningHandler(func=_WARNING_HANDLER):
     old_warning_handler = _LIBTIFF.TIFFSetWarningHandler(func)
     return old_warning_handler
 
+
 def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
     """
     Corresponds to TIFFWriteEncodedStrip.
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [
         ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32
     ]
@@ -535,11 +640,15 @@ def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
     raster = stripdata.ctypes.data_as(ctypes.c_void_p)
     _LIBTIFF.TIFFWriteEncodedStrip(fp, stripnum, raster, size)
 
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
 
 def writeEncodedTile(fp, tilenum, tiledata, size=-1):
     """
     Corresponds to TIFFWriteEncodedTile.
     """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
     ARGTYPES = [
         ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32
     ]
@@ -547,6 +656,8 @@ def writeEncodedTile(fp, tilenum, tiledata, size=-1):
     _LIBTIFF.TIFFWriteEncodedTile.restype = check_error
     raster = tiledata.ctypes.data_as(ctypes.c_void_p)
     _LIBTIFF.TIFFWriteEncodedTile(fp, tilenum, raster, size)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
 
 
 def check_error(status):
@@ -556,5 +667,10 @@ def check_error(status):
     for error status in each wrapping function and an exception will always be
     appropriately raised.
     """
+    msg = ''
+    while not EQ.empty():
+        msg = EQ.get()
+        raise LibTIFFError(msg)
+
     if status == 0:
         raise RuntimeError('failed')
