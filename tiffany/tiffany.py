@@ -3,7 +3,6 @@ import ctypes
 import datetime as dt
 import pathlib
 import struct
-import warnings
 
 # 3rd party libraries
 from lxml import etree
@@ -411,7 +410,6 @@ class TIFF(object):
             else:
                 item = self.tags[idx]
 
-        self._check_for_warnings()
         return item
 
     def _check_for_errors(self):
@@ -419,10 +417,6 @@ class TIFF(object):
         while not lib.EQ.empty():
             msg = lib.EQ.get()
             raise LibTIFFError(msg)
-    
-    def _check_for_warnings(self):
-        while not lib.WQ.empty():
-            warnings.warn(lib.WQ.get())
     
     def parse_ifd(self):
         """

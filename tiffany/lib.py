@@ -3,6 +3,7 @@ import ctypes
 import datetime
 from enum import IntEnum
 import queue
+import warnings
 
 # Third party library imports
 import numpy as np
@@ -12,9 +13,6 @@ from . import config
 from .tags import TAGS
 
 _LIBTIFF, _LIBC = config.load_libraries('tiff', 'c')
-
-# The warning messages queue
-WQ = queue.Queue()
 
 # The error messages queue
 EQ = queue.Queue()
@@ -48,8 +46,7 @@ def _handle_warning(module, fmt, ap):
     warning_str = buffer.value.decode('utf-8')
 
     message = f"{module}: {warning_str}"
-    WQ.put(message)
-    return None
+    warnings.warn(message)
 
 # Set the function types for the warning handler.
 _WFUNCTYPE = ctypes.CFUNCTYPE(
