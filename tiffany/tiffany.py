@@ -17,6 +17,9 @@ from . import tags
 # The warning messages queue
 WQ = queue.Queue()
 
+# The error messages queue
+EQ = queue.Queue()
+
 class JPEGColorModeRawError(RuntimeError):
     """
     Raise this exception if an attempt is made to write YCbCr/JPEG images with
@@ -25,7 +28,31 @@ class JPEGColorModeRawError(RuntimeError):
     pass
 
 
+class LibTIFFError(RuntimeError):
+    """
+    Raise this exception if we detect a generic error from libtiff.
+    """
+    pass
+
+
 libc = ctypes.CDLL(ctypes.util.find_library('c'))
+
+def _handle_error(module, fmt, ap):
+    # Use VSPRINTF in the C library to put together the error message.
+    # int vsprintf(char * buffer, const char * restrict format, va_list ap);
+    buffer = ctypes.create_string_buffer(1000)
+
+    libc.vsprintf.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p]
+    libc.vsprintf.restype = ctypes.c_int32
+    n = libc.vsprintf(buffer, fmt, ap)
+
+    module = module.decode('utf-8')
+    error_str = buffer.value.decode('utf-8')
+
+    message = f"{module}: {error_str}"
+    EQ.put(message)
+    return None
+
 def _handle_warning(module, fmt, ap):
     # Use VSPRINTF in the C library to put together the warning message.
     # int vsprintf(char * buffer, const char * restrict format, va_list ap);
@@ -42,7 +69,9 @@ def _handle_warning(module, fmt, ap):
     WQ.put(message)
     return None
 
+_error_handler = lib._WFUNCTYPE(_handle_error)
 _warning_handler = lib._WFUNCTYPE(_handle_warning)
+
 
 class TIFF(object):
     """
@@ -81,6 +110,7 @@ class TIFF(object):
         mode : str
             File access mode.
         """
+        self.old_error_handler = lib.setErrorHandler(_error_handler)
         self.old_warning_handler = lib.setWarningHandler(_warning_handler)
         if isinstance(path, str):
             self.path = pathlib.Path(path)
@@ -296,6 +326,8 @@ class TIFF(object):
             msg = f"Unhandled:  {idx}"
             raise RuntimeError(msg)
 
+        self._check_for_errors()
+
     def _determine_datatype(self):
         """
         Determine the datatype for incoming imagery.
@@ -426,6 +458,12 @@ class TIFF(object):
         self._check_for_warnings()
         return item
 
+    def _check_for_errors(self):
+        msg = ''
+        while not EQ.empty():
+            msg = EQ.get()
+            raise LibTIFFError(msg)
+    
     def _check_for_warnings(self):
         while not WQ.empty():
             warnings.warn(WQ.get())

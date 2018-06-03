@@ -461,6 +461,17 @@ _WFUNCTYPE = ctypes.CFUNCTYPE(
     ctypes.c_void_p  # va_list
 )
 
+def setErrorHandler(func):
+    # The signature of the error handler is 
+    #
+    # const char *module, const char *fmt, va_list ap
+    #
+    # The return type is void *
+    _LIB.TIFFSetErrorHandler.argtypes = [_WFUNCTYPE]
+    _LIB.TIFFSetErrorHandler.restype = _WFUNCTYPE
+    old_error_handler = _LIB.TIFFSetErrorHandler(func)
+    return old_error_handler
+
 def setWarningHandler(func):
     # The signature of the warning handler is 
     #

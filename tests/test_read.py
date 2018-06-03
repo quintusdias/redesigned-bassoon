@@ -82,7 +82,8 @@ class TestSuite(unittest.TestCase):
         path = self._get_path('zackthecat.tif')
 
         t = TIFF(path)
-        image = t[:]
+        with self.assertWarns(UserWarning):
+            image = t[:]
 
         self.assertEqual(image.shape, (t.h, t.w, t.spp))
 
