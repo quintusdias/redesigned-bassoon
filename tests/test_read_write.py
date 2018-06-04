@@ -13,9 +13,9 @@ import skimage.data
 import skimage.measure
 
 # Local imports
-from tiffany.tiffany import TIFF, JPEGColorModeRawError
-from tiffany.lib import LibTIFFError
-from tiffany import lib
+from spiff.spiff import TIFF, JPEGColorModeRawError
+from spiff.lib import LibTIFFError
+from spiff import lib
 
 
 @unittest.skipIf(platform.system() == 'Windows', "tempfile issue on Windows")

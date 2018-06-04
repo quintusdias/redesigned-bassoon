@@ -2,16 +2,16 @@
 from setuptools import setup
 
 kwargs = {
-    'name': 'Tiffany',
+    'name': 'Spiff',
     'description': 'Tools for accessing TIFFs',
     'long_description': open('README.md').read(),
     'author': 'John Evans',
     'author_email': 'john.g.evans.ne@gmail.com',
     'url': 'https://github.com/quintusdias/redesigned-bassoon',
-    'packages': ['tiffany', 'tiffany.data', 'tiffany.lib'],
-    'package_data': {'tiffany': ['data/*.tif']},
+    'packages': ['spiff', 'spiff.data', 'spiff.lib'],
+    'package_data': {'spiff': ['data/*.tif']},
     'license': 'MIT',
-    'test_suite': 'tiffany.tests',
+    'test_suite': 'spiff.tests',
     'install_requires': ['setuptools'],
     'version': '0.0.1',
     'classifiers': [

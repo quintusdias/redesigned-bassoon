@@ -6,8 +6,8 @@ import unittest
 import numpy as np
 
 # Local imports
-from tiffany.tiffany import TIFF
-from tiffany.lib import (
+from spiff.spiff import TIFF
+from spiff.lib import (
     Compression, Photometric, PlanarConfig, JPEGProc,
     ResolutionUnit, SampleFormat, NotRGBACompatibleError
 )
