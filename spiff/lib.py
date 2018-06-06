@@ -320,6 +320,12 @@ def open(filename, mode='r'):
     return fp
 
 
+def getVersion():
+    _LIBTIFF.TIFFGetVersion.restype = ctypes.c_char_p
+    v = _LIBTIFF.TIFFGetVersion()
+    return v.decode('utf-8')
+
+
 def setField(fp, tag, value):
     """
     Corresponds to TIFFSetField
@@ -636,7 +642,7 @@ def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
         ctypes.c_void_p, ctypes.c_uint32, ctypes.c_void_p, ctypes.c_uint32
     ]
     _LIBTIFF.TIFFWriteEncodedStrip.argtypes = ARGTYPES
-    _LIBTIFF.TIFFWriteEncodedStrip.restype = ctypes.c_int
+    _LIBTIFF.TIFFWriteEncodedStrip.restype = check_error
     raster = stripdata.ctypes.data_as(ctypes.c_void_p)
     _LIBTIFF.TIFFWriteEncodedStrip(fp, stripnum, raster, size)
 
