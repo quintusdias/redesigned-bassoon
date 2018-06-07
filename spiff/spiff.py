@@ -1,6 +1,8 @@
 # Standard libaries
 import datetime as dt
+import io
 import pathlib
+import pprint
 import struct
 
 # 3rd party libraries
@@ -73,6 +75,18 @@ class TIFF(object):
             self.fp = self.path.open(mode='rb')
             self.parse_header()
             self.parse_ifd()
+
+    def __str__(self):
+        s = io.StringIO()
+        pp = pprint.PrettyPrinter(stream=s, indent=4)
+        pp.pprint(self.tags)
+        return s.getvalue()
+
+    def __repr__(self):
+        s = io.StringIO()
+        pp = pprint.PrettyPrinter(stream=s, indent=4)
+        pp.pprint(self.tags)
+        return s.getvalue()
 
     @property
     def rgba(self):
