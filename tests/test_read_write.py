@@ -205,29 +205,31 @@ class TestSuite(unittest.TestCase):
         compression = lib.Compression.JPEG
         pc = lib.PlanarConfig.CONTIG
         # subsamplings = ((1, 1), (1, 2), (2, 1), (2, 2))
+        qualities = (50, 75, 100)
         subsamplings = ((1, 1),)
         tiled = (True, False)
         modes = ('w', 'w8')
 
-        g = itertools.product(tiled, subsamplings, modes)
-        for tiled, subsampling, mode in g:
+        g = itertools.product(tiled, qualities, modes)
+        for tiled, quality, mode in g:
             with self.subTest(tiled=tiled,
-                              subsampling=subsampling,
+                              quality=quality,
                               mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)
                     t['Photometric'] = photometric
                     t['Compression'] = compression
                     t['JPEGColorMode'] = lib.JPEGColorMode.RGB
+                    t['JPEGQuality'] = quality
+                    t['YCbCrSubsampling'] = (1, 1)
 
                     w, h, nz = expected.shape
                     t['ImageWidth'] = expected.shape[1]
                     t['ImageLength'] = expected.shape[0]
                     t['PlanarConfig'] = pc
-                    t['YCbCrSubsampling'] = subsampling
-
                     t['BitsPerSample'] = 8
                     t['SamplesPerPixel'] = 3
+
                     if tiled:
                         tw, th = int(w / 2), int(h / 2)
                         t['TileLength'] = th
@@ -262,7 +264,12 @@ class TestSuite(unittest.TestCase):
                     actual = t[:][:, :, :3]
 
                 metric = skimage.measure.compare_psnr(expected, actual)
-                self.assertTrue(metric > 30)
+                if quality == 50:
+                    self.assertTrue(metric > 33)
+                elif quality == 75:
+                    self.assertTrue(metric > 35)
+                elif quality == 100:
+                    self.assertTrue(metric > 50)
 
     def test_write_read_ycbcr_jpeg_raw(self):
         """

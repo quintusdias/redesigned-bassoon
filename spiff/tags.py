@@ -695,6 +695,10 @@ TAGS = {
         'number': 50909,
         'type': None,
     },
+    'JPEGQuality': {
+        'number': 65537,
+        'type': ctypes.c_int32,
+    },
     'JPEGColorMode': {
         'number': 65538,
         'type': ctypes.c_int32,
