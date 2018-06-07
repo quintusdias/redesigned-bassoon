@@ -193,7 +193,6 @@ class TestSuite(unittest.TestCase):
             with self.assertRaises(LibTIFFError):
                 t[:] = expected
 
-    @unittest.skip('Only stripped non-subsampled is working')
     def test_write_read_ycbcr_jpeg_rgb(self):
         """
         Scenario: Write the scikit-image "astronaut" as ycbcr/jpeg.
@@ -202,21 +201,17 @@ class TestSuite(unittest.TestCase):
         """
         expected = skimage.data.astronaut()
 
-        photometrics = (lib.Photometric.YCBCR,)
-        Compressions = (lib.Compression.JPEG,)
-        planars = (lib.PlanarConfig.CONTIG,)
-        subsamplings = ((1, 1), (1, 2), (2, 1), (2, 2))
+        photometric = lib.Photometric.YCBCR
+        compression = lib.Compression.JPEG
+        pc = lib.PlanarConfig.CONTIG
+        # subsamplings = ((1, 1), (1, 2), (2, 1), (2, 2))
+        subsamplings = ((1, 1),)
         tiled = (True, False)
         modes = ('w', 'w8')
 
-        g = itertools.product(
-            photometrics, Compressions, planars, tiled, subsamplings, modes
-        )
-        for photometric, compression, pc, tiled, subsampling, mode in g:
-            with self.subTest(photometric=photometric,
-                              compression=compression,
-                              planar_config=pc,
-                              tiled=tiled,
+        g = itertools.product(tiled, subsamplings, modes)
+        for tiled, subsampling, mode in g:
+            with self.subTest(tiled=tiled,
                               subsampling=subsampling,
                               mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
@@ -261,10 +256,13 @@ class TestSuite(unittest.TestCase):
                     else:
                         self.assertEqual(t['RowsPerStrip'], rps)
 
-                    actual = t[:]
+                    t.rgba = True
+
+                    # Get rid of the alpha layer.
+                    actual = t[:][:, :, :3]
 
                 metric = skimage.measure.compare_psnr(expected, actual)
-                self.assertTrue(metric > 5)
+                self.assertTrue(metric > 30)
 
     def test_write_read_ycbcr_jpeg_raw(self):
         """
