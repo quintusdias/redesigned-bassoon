@@ -1,9 +1,5 @@
 # Local imports
-import pathlib
 import unittest
-
-# Third party library imports
-import numpy as np
 
 # Local imports
 from spiff import lib

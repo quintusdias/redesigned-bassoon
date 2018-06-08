@@ -225,7 +225,27 @@ class PlanarConfig(IntEnum):
 
 class Predictor(IntEnum):
     """
-    Corresponds to PREDICTOR* values listed in tiff.h
+    Enumeration corresponding to PREDICTOR* values listed in tiff.h
+
+    Examples
+    --------
+    >>> import skimage.data
+    >>> from spiff import TIFF, lib
+    >>> image = skimage.data.astronaut()
+    >>> h, w, nz = image.shape
+    >>> t = TIFF('astronaut.tif', mode='w8')
+    >>> t['Photometric'] = lib.Photometric.RGB
+    >>> t['Compression'] = lib.Compression.LZW
+    >>> t['Predictor'] = lib.Predictor.HORIZONTAL
+    >>> t['BitsPerSample'] = 8
+    >>> t['ImageWidth'] = w
+    >>> t['ImageLength'] = h
+    >>> t['SamplesPerPixel'] = nz
+    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+    >>> t['TileLength'] = int(h/2)
+    >>> t['TileWidth'] = int(w/2)
+    >>> t['Software'] = 'SPIFF!'
+    >>> t[:] = image
     """
     NONE = 1
     HORIZONTAL = 2
