@@ -37,11 +37,25 @@ class TestSuite(unittest.TestCase):
         t['Photometric'] = photo
         t['Compression'] = comp
         t['Predictor'] = predictor
-        t['BitsPerSample'] = 8
+        
+        if expected.dtype == np.float32:
+            bps = 32
+            sf = lib.SampleFormat.IEEEFP
+        else:
+            bps = 8
+            sf = lib.SampleFormat.UINT
+        t['BitsPerSample'] = bps
+        t['SampleFormat'] = sf
+
         t['SamplesPerPixel'] = 3
         t['PlanarConfig'] = pc
 
-        h, w, nz = expected.shape
+        nz = len(expected.shape)
+        if nz == 2:
+            h, w = expected.shape
+        else:
+            h, w, nz = expected.shape
+
         t['ImageWidth'] = w
         t['ImageLength'] = h
 
@@ -85,6 +99,34 @@ class TestSuite(unittest.TestCase):
         expected = skimage.data.astronaut()
 
         predictors = (lib.Predictor.NONE, lib.Predictor.HORIZONTAL)
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+
+        g = itertools.product(tiled, modes, predictors)
+        for tiled, mode, predictor in g:
+            with self.subTest(tiled=tiled, mode=mode, predictor=predictor):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                    self._verify_lzw(tfile, tiled, mode, predictor, expected)
+
+                    p = pathlib.Path(tfile.name)
+                    sz = p.stat().st_size
+
+                    if predictor == lib.Predictor.NONE:
+                        self.assertTrue(sz > 740000)
+                    else:
+                        self.assertTrue(sz < 540000)
+
+    def test_write_read_lzw_predictor_floating_point(self):
+        """
+        Scenario: Write the scikit-image "stereo_motorcycle" with lzw
+        compression and floating point predictor scheme.
+
+        Expected Result:  Floating point predictor compression is superior to
+        no predictor scheme.
+        """
+        _, _, expected = skimage.data.stereo_motorcycle()
+        predictors = (lib.Predictor.NONE, lib.Predictor.FLOATINGPOINT)
 
         tiled = (True, False)
         modes = ('w', 'w8')
