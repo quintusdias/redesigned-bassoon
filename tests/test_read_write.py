@@ -28,6 +28,81 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
+    def _verify_lzw(self, tfile, tiled, mode, predictor, expected):
+        photo = lib.Photometric.RGB
+        comp = lib.Compression.LZW
+        pc = lib.PlanarConfig.CONTIG
+
+        t = TIFF(tfile.name, mode=mode)
+        t['Photometric'] = photo
+        t['Compression'] = comp
+        t['Predictor'] = predictor
+        t['BitsPerSample'] = 8
+        t['SamplesPerPixel'] = 3
+        t['PlanarConfig'] = pc
+
+        h, w, nz = expected.shape
+        t['ImageWidth'] = w
+        t['ImageLength'] = h
+
+        if tiled:
+            tw, th = 256, 256
+            t['TileLength'] = th
+            t['TileWidth'] = tw
+        else:
+            rps = 256
+            t['RowsPerStrip'] = rps
+
+        t[:] = expected
+
+        del t
+
+        t = TIFF(tfile.name)
+        self.assertEqual(t['Photometric'], photo)
+        self.assertEqual(t['Compression'], comp)
+        self.assertEqual(t['ImageWidth'], w)
+        self.assertEqual(t['ImageLength'], h)
+        self.assertEqual(t['SamplesPerPixel'], 3)
+        if tiled:
+            self.assertEqual(t['TileWidth'], tw)
+            self.assertEqual(t['TileLength'], th)
+        else:
+            self.assertEqual(t['RowsPerStrip'], rps)
+        self.assertEqual(t['Predictor'], predictor)
+
+        actual = t[:]
+
+        np.testing.assert_array_equal(actual, expected)
+
+    def test_write_read_lzw_predictor_integer(self):
+        """
+        Scenario: Write the scikit-image "astronaut" with lzw compression and
+        integer predictor.
+
+        Expected Result:  Integer predictor compression is superior to no
+        compression.
+        """
+        expected = skimage.data.astronaut()
+
+        predictors = (lib.Predictor.NONE, lib.Predictor.HORIZONTAL)
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+
+        g = itertools.product(tiled, modes, predictors)
+        for tiled, mode, predictor in g:
+            with self.subTest(tiled=tiled, mode=mode, predictor=predictor):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                    self._verify_lzw(tfile, tiled, mode, predictor, expected)
+
+                    p = pathlib.Path(tfile.name)
+                    sz = p.stat().st_size
+
+                    if predictor == lib.Predictor.NONE:
+                        self.assertTrue(sz > 740000)
+                    else:
+                        self.assertTrue(sz < 540000)
+
     def test_write_read_separated_non_cmyk(self):
         """
         Scenario: Write the scikit-image "astronaut" as separated with a
@@ -206,7 +281,6 @@ class TestSuite(unittest.TestCase):
         pc = lib.PlanarConfig.CONTIG
         # subsamplings = ((1, 1), (1, 2), (2, 1), (2, 2))
         qualities = (50, 75, 100)
-        subsamplings = ((1, 1),)
         tiled = (True, False)
         modes = ('w', 'w8')
 
