@@ -134,7 +134,38 @@ class Compression(IntEnum):
 
 class ExtraSamples(IntEnum):
     """
-    Corresponds to EXTRASAM* values listed in tiff.h
+    Enumeration corresponding to EXTRASAMPLE_* values listed in tiff.h
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import skimage.data
+    >>> from spiff import TIFF, lib
+    >>> gray = skimage.data.camera().reshape((512, 512, 1))
+
+    >>> # Create a gradient alpha layer.
+    >>> x = np.arange(0, 256, 0.5).astype(np.uint8).reshape(512, 1)
+    >>> alpha = np.repeat(x, 512, axis=1).reshape((512, 512, 1))
+
+    >>> image = np.concatenate((gray, alpha), axis=2)
+    >>> w, h, nz = image.shape
+    >>> tw, th = int(w/2), int(h/2)
+
+    >>> t = TIFF('camera-extrasamples.tif', mode='w8')
+    >>> t['Photometric'] = lib.Photometric.MINISBLACK
+    >>> t['Compression'] = lib.Compression.NONE
+
+    >>> t['ImageWidth'] = w
+    >>> t['ImageLength'] = h
+    >>> t['BitsPerSample'] = 8
+    >>> t['SamplesPerPixel'] = nz
+    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+    >>> t['TileLength'] = th
+    >>> t['TileWidth'] = tw
+    >>> t['ExtraSamples'] = (lib.ExtraSamples.ASSOCALPHA, )
+
+    >>> t[:] = image
+
     """
     UNSPECIFIED = 0
     ASSOCALPHA = 1
@@ -233,7 +264,7 @@ class Predictor(IntEnum):
     >>> from spiff import TIFF, lib
     >>> image = skimage.data.astronaut()
     >>> h, w, nz = image.shape
-    >>> t = TIFF('astronaut.tif', mode='w8')
+    >>> t = TIFF('astronaut-predictor.tif', mode='w8')
     >>> t['Photometric'] = lib.Photometric.RGB
     >>> t['Compression'] = lib.Compression.LZW
     >>> t['Predictor'] = lib.Predictor.HORIZONTAL
