@@ -205,6 +205,32 @@ class Orientation(IntEnum):
 class Photometric(IntEnum):
     """
     Corresponds to TIFFTAG_PHOTOMETRIC* values listed in tiff.h
+    
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import skimage.data
+    >>> from spiff import TIFF, lib
+    >>> image = skimage.data.astronaut()
+    >>> t = TIFF('astronaut-jpeg.tif', mode='w8')
+    >>> t['Photometric'] = lib.Photometric.YCBCR
+    >>> t['Compression'] = lib.Compression.JPEG
+    >>> t['JPEGColorMode'] = lib.JPEGColorMode.RGB
+    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+    >>> t['JPEGQuality'] = 90
+    >>> t['YCbCrSubsampling'] = (1, 1)
+
+    >>> w, h, nz = image.shape
+    >>> t['ImageWidth'] = w
+    >>> t['ImageLength'] = h
+    >>> t['TileWidth'] = int(w/2)
+    >>> t['TileLength'] = int(h/2)
+    >>> t['BitsPerSample'] = 8
+    >>> t['SamplesPerPixel'] = nz
+
+    >>> t['Software'] = lib.getVersion()
+
+    >>> t[:] = image
     """
     MINISWHITE = 0  # value is white
     MINISBLACK = 1  # value is black
