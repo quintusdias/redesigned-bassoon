@@ -142,19 +142,15 @@ class ExtraSamples(IntEnum):
     >>> import skimage.data
     >>> from spiff import TIFF, lib
     >>> gray = skimage.data.camera().reshape((512, 512, 1))
-
     >>> # Create a gradient alpha layer.
     >>> x = np.arange(0, 256, 0.5).astype(np.uint8).reshape(512, 1)
     >>> alpha = np.repeat(x, 512, axis=1).reshape((512, 512, 1))
-
     >>> image = np.concatenate((gray, alpha), axis=2)
     >>> w, h, nz = image.shape
     >>> tw, th = int(w/2), int(h/2)
-
     >>> t = TIFF('camera-extrasamples.tif', mode='w8')
     >>> t['Photometric'] = lib.Photometric.MINISBLACK
     >>> t['Compression'] = lib.Compression.NONE
-
     >>> t['ImageWidth'] = w
     >>> t['ImageLength'] = h
     >>> t['BitsPerSample'] = 8
@@ -163,7 +159,6 @@ class ExtraSamples(IntEnum):
     >>> t['TileLength'] = th
     >>> t['TileWidth'] = tw
     >>> t['ExtraSamples'] = (lib.ExtraSamples.ASSOCALPHA, )
-
     >>> t[:] = image
 
     """
@@ -219,7 +214,6 @@ class Photometric(IntEnum):
     >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
     >>> t['JPEGQuality'] = 90
     >>> t['YCbCrSubsampling'] = (1, 1)
-
     >>> w, h, nz = image.shape
     >>> t['ImageWidth'] = w
     >>> t['ImageLength'] = h
@@ -227,9 +221,7 @@ class Photometric(IntEnum):
     >>> t['TileLength'] = int(h/2)
     >>> t['BitsPerSample'] = 8
     >>> t['SamplesPerPixel'] = nz
-
     >>> t['Software'] = lib.getVersion()
-
     >>> t[:] = image
     """
     MINISWHITE = 0  # value is white
