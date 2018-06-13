@@ -11,14 +11,6 @@ Subpackages
 Submodules
 ----------
 
-spiff.config module
--------------------
-
-.. automodule:: spiff.config
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 spiff.lib module
 ----------------
 
