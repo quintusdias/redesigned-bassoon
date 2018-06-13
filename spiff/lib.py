@@ -9,10 +9,10 @@ import warnings
 import numpy as np
 
 # Local imports
-from . import config
+from . import _config
 from .tags import TAGS
 
-_LIBTIFF, _LIBC = config.load_libraries('tiff', 'c')
+_LIBTIFF, _LIBC = _config.load_libraries('tiff', 'c')
 
 
 class LibTIFFError(RuntimeError):
