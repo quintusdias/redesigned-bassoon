@@ -1,5 +1,5 @@
 """
-Configure glymur to use installed libraries if possible.
+Configure spiff to load libc and libtiff.
 """
 import ctypes
 from ctypes.util import find_library
@@ -16,6 +16,11 @@ _macports_default_location = {'tiff': '/opt/local/lib/libtiff.dylib'}
 def load_libraries(*pargs):
     """
     Get a list of ctypes handles, one for each library.
+
+    Parameters
+    ----------
+    pargs : list
+        List of named libraries.  Load each via ctypes.
     """
     lst = []
     for name in pargs:
@@ -26,13 +31,21 @@ def load_libraries(*pargs):
 
 
 def load_library(name):
+    """
+    Load a named library.
+
+    Parameters
+    ----------
+    name : str
+        Name of library, i.e. 'tiff'.
+    """
 
     path = None
 
     if ((('Anaconda' in sys.version) or
          ('Continuum Analytics, Inc.' in sys.version) or
          ('packaged by conda-forge' in sys.version))):
-        # If Anaconda, then openjpeg may have been installed via conda.
+        # If Anaconda, then libtiff may have been installed via conda.
         python_path = pathlib.Path(sys.executable)
         if platform.system() in ['Linux', 'Darwin']:
             suffix = '.so' if platform.system() == 'Linux' else '.dylib'
@@ -61,27 +74,36 @@ def load_library(name):
 
 
 def load_library_handle(libname, path):
-    """Load the library, return the ctypes handle."""
+    """
+    Load the library, return the ctypes handle.
+
+    Parameters
+    ----------
+    libname : str or None
+        Name of library.
+    path : str or path
+        Full path to libname.
+    """
 
     if path is None or path in ['None', 'none']:
         # Either could not find a library via ctypes or
         # user-configuration-file, or we could not find it in any of the
         # default locations, or possibly the user intentionally does not want
         # one of the libraries to load.
-        msg = "The tiff library could be loaded.  "
+        msg = f"The {libname} library could be loaded.  "
         warnings.warn(msg)
 
         return None
 
     try:
         if os.name == "nt":
-            opj_lib = ctypes.windll.LoadLibrary(path)
+            lib_handle = ctypes.windll.LoadLibrary(path)
         else:
-            opj_lib = ctypes.CDLL(path)
+            lib_handle = ctypes.CDLL(path)
     except (TypeError, OSError):
         msg = 'The {libname} library at {path} could not be loaded.'
         msg = msg.format(path=path, libname=libname)
         warnings.warn(msg, UserWarning)
-        opj_lib = None
+        lib_handle = None
 
-    return opj_lib
+    return lib_handle

@@ -12,7 +12,7 @@ import numpy as np
 from . import config, lib
 from .tags import TAGS
 
-_LIBTIFF, _LIBC = config.load_libraries('tiff', 'c')
+_LIBTIFF, _LIBC = _config.load_libraries('tiff', 'c')
 
 
 class LibTIFFError(RuntimeError):

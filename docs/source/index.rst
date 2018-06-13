@@ -10,6 +10,7 @@ Welcome to spiff's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   introduction
    modules
 
 
