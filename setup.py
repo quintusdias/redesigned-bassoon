@@ -1,5 +1,11 @@
 # Third party library imports ...
 from setuptools import setup
+from setuptools.extension import Extension
+from Cython.Build import cythonize
+
+extension = Extension('spiff._cytiff',
+                      sources=['spiff/_cytiff.pyx'],
+                      include_dirs=['/opt/local/include'])
 
 kwargs = {
     'name': 'Spiff',
@@ -11,6 +17,7 @@ kwargs = {
     'packages': ['spiff', 'spiff.data', 'spiff.lib'],
     'package_data': {'spiff': ['data/*.tif']},
     'license': 'MIT',
+    'ext_modules': cythonize([extension]),
     'test_suite': 'spiff.tests',
     'install_requires': ['setuptools'],
     'version': '0.0.1',
