@@ -22,6 +22,18 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
+    def test_repr(self):
+        """
+        Scenario:  Test TIFF object representation. 
+
+        Expected Result:  Should look same as output of tiffinfo.
+        """
+        path = self._get_path('zackthecat.tif')
+        t = TIFF(path)
+        actual = repr(t)
+        expected = fixtures.zackthecat_tiffinfo
+        self.assertEqual(actual, expected)
+
     def test_rgba_refused_on_bad_candidate(self):
         """
         Scenario: Attempt to read a float32 image using the RGBA interface.

@@ -12,6 +12,7 @@ import numpy as np
 # Local imports
 from . import lib
 from . import tags
+from . import _cytiff
 
 
 class JPEGColorModeRawError(RuntimeError):
@@ -83,10 +84,7 @@ class TIFF(object):
         return s.getvalue()
 
     def __repr__(self):
-        s = io.StringIO()
-        pp = pprint.PrettyPrinter(stream=s, indent=4)
-        pp.pprint(self.tags)
-        return s.getvalue()
+        return _cytiff.print_directory(self.tfp)
 
     @property
     def rgba(self):
