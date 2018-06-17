@@ -11,6 +11,7 @@ from spiff.lib import (
     Compression, Photometric, PlanarConfig, JPEGProc,
     ResolutionUnit, SampleFormat, NotRGBACompatibleError
 )
+from . import fixtures
 
 
 class TestSuite(unittest.TestCase):
@@ -21,6 +22,18 @@ class TestSuite(unittest.TestCase):
         """
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
+
+    def test_repr(self):
+        """
+        Scenario:  Test TIFF object representation. 
+
+        Expected Result:  Should look same as output of tiffinfo.
+        """
+        path = self._get_path('zackthecat.tif')
+        t = TIFF(path)
+        actual = repr(t)
+        expected = fixtures.zackthecat_tiffinfo
+        self.assertEqual(actual, expected)
 
     def test_rgba_refused_on_bad_candidate(self):
         """

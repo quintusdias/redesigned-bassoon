@@ -12,6 +12,7 @@ import numpy as np
 # Local imports
 from . import lib
 from . import tags
+from . import _cytiff
 
 
 class JPEGColorModeRawError(RuntimeError):
@@ -83,10 +84,15 @@ class TIFF(object):
         return s.getvalue()
 
     def __repr__(self):
-        s = io.StringIO()
-        pp = pprint.PrettyPrinter(stream=s, indent=4)
-        pp.pprint(self.tags)
-        return s.getvalue()
+        """
+        Use the TIFFPrintDirectory library routine for this.
+
+        Sometimes it tacks on unprintable characters, so we have to
+        specifically ignore them.
+        """
+        b = _cytiff.print_directory(self.tfp)
+        s = b.decode('utf-8', 'ignore')
+        return s
 
     @property
     def rgba(self):
