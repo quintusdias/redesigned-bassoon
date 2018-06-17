@@ -5,7 +5,9 @@ from Cython.Build import cythonize
 
 extension = Extension('spiff._cytiff',
                       sources=['spiff/_cytiff.pyx'],
-                      include_dirs=['/opt/local/include'])
+                      libraries=['tiff', 'jpeg', 'lzma', 'z'],
+                      include_dirs=['/opt/local/include'],
+                      library_dir=['/opt/local/lib'])
 
 kwargs = {
     'name': 'Spiff',

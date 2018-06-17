@@ -84,7 +84,8 @@ class TIFF(object):
         return s.getvalue()
 
     def __repr__(self):
-        return _cytiff.print_directory(self.tfp)
+        b = _cytiff.print_directory(self.tfp)
+        return b.decode('utf-8')
 
     @property
     def rgba(self):
