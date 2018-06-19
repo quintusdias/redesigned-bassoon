@@ -23,6 +23,22 @@ class JPEGColorModeRawError(RuntimeError):
     pass
 
 
+class NoEXIFIFDError(RuntimeError):
+    """
+    Raise this exception if the user tries to change to an EXIF IFD and there
+    is no EXIF IFD.
+    """
+    pass
+
+
+class TIFFReadImageError(RuntimeError):
+    """
+    Raise this exception if a read operation was inappropriate.  Maybe the
+    library will segfault otherwise?
+    """
+    pass
+
+
 class TIFF(object):
     """
     Attributes
@@ -76,6 +92,8 @@ class TIFF(object):
             self.fp = self.path.open(mode='rb')
             self.parse_header()
             self.parse_ifd()
+
+        self._ifd_offsets = []
 
     def __str__(self):
         s = io.StringIO()
@@ -184,6 +202,42 @@ class TIFF(object):
 
         # Close the TIFF file pointer.
         lib.close(self.tfp)
+
+    def back(self):
+        """
+        Go back to the previous IFD.
+        """
+        old_offset = self._ifd_offsets.pop()
+        lib.setSubDirectory(self.tfp, old_offset)
+
+        # And finally, refresh the tags.
+        self.fp.seek(old_offset)
+        self.parse_ifd()
+
+    def visit_ifd(self, offset):
+        """
+        Change directories and read the contents of a new IFD.
+
+        Parameters
+        ----------
+        offset : unsigned integer
+            Offset to the sub ifd.  This should be a value retrieved from the
+            ExifIFD, GPSIfd, or SubIFDs tags.  Providing an incorrect value is
+            a good way to segfault libtiff.
+        """
+        old_offset = lib.currentDirOffset(self.tfp)
+        if 'ExifIFD' in self.tags.keys() and self.tags['ExifIFD'] == offset:
+            lib.readEXIFDirectory(self.tfp, offset)
+        else:
+            lib.setSubDirectory(self.tfp, offset)
+
+        # After we've successfully transfered to the new IFD, save the old
+        # offset.
+        self._ifd_offsets.append(old_offset)
+
+        # And finally, refresh the tags.
+        self.fp.seek(offset)
+        self.parse_ifd()
 
     def _writeStrippedImage(self, image):
         """
@@ -397,7 +451,9 @@ class TIFF(object):
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
-            if self.rgba:
+            if not ('TileByteCounts' in self.tags.keys() or 'StripByteCounts' in self.tags.keys()):
+                raise TIFFReadImageError('This IFD does not have an image')
+            elif self.rgba:
                 item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
             elif self['Compression'] == lib.Compression.OJPEG:
                 if idx.start is None and idx.stop is None and idx.step is None:
@@ -506,7 +562,11 @@ class TIFF(object):
                 # tuple.
                 payload = payload[0]
 
-        tag_name = self.tagnum2name[tag_num]
+
+        try:
+            tag_name = self.tagnum2name[tag_num]
+        except KeyError:
+            tag_name = str(tag_num)
 
         # Special processing?
         if tag_num == 333:

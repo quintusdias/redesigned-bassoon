@@ -1,12 +1,14 @@
 # Local imports
 import pathlib
 import unittest
+import warnings
 
 # Third party library imports
 import numpy as np
 
 # Local imports
 from spiff.spiff import TIFF
+from spiff import lib
 from spiff.lib import (
     Compression, Photometric, PlanarConfig, JPEGProc,
     ResolutionUnit, SampleFormat, NotRGBACompatibleError
@@ -23,17 +25,27 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
-    def test_repr(self):
+    def test_move_to_exif_then_back(self):
         """
-        Scenario:  Test TIFF object representation. 
+        Scenario: Read an EXIF subdirectory, then move back into the main
+        directory.
 
-        Expected Result:  Should look same as output of tiffinfo.
+        Expected Result:  The offset of the main directory should match after
+        moving back from the Exif directory.
         """
-        path = self._get_path('zackthecat.tif')
+        path = self._get_path('b52a2fceb34f9b31cb417379cf8c02ba.tif')
         t = TIFF(path)
-        actual = repr(t)
-        expected = fixtures.zackthecat_tiffinfo
-        self.assertEqual(actual, expected)
+        first_offset = lib.currentDirOffset(t.tfp)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            t.visit_ifd(t['ExifIFD'])
+            exif_offset = lib.currentDirOffset(t.tfp)
+
+        t.back()
+        third_offset = lib.currentDirOffset(t.tfp)
+
+        self.assertNotEqual(first_offset, exif_offset)
+        self.assertEqual(first_offset, third_offset)
 
     def test_rgba_refused_on_bad_candidate(self):
         """
