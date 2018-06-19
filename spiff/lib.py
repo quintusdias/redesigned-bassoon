@@ -371,6 +371,21 @@ def close(fp):
     _reset_error_warning_handlers(err_handler, warn_handler)
 
 
+def currentDirOffset(fp):
+    """
+    Corresponds to TIFFCurrentDirOffset
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
+    ARGTYPES = [ctypes.c_void_p]
+    _LIBTIFF.TIFFCurrentDirOffset.argtypes = ARGTYPES
+    _LIBTIFF.TIFFCurrentDirOffset.restype = ctypes.c_uint64
+    offset = _LIBTIFF.TIFFCurrentDirOffset(fp)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
+    return offset
+
 def open(filename, mode='r'):
     """
     Corresponds to TIFFOpen

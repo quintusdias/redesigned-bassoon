@@ -399,6 +399,14 @@ TAGS = {
         'number': 33432,
         'type': ctypes.c_char_p,
     },
+    'ExposureTime': {
+        'number': 33434,
+        'type': ctypes.c_double,
+    },
+    'FNumber': {
+        'number': 33437,
+        'type': ctypes.c_double,
+    },
     'MDFile': {
         'number': 33445,
         'type': None,
@@ -487,9 +495,17 @@ TAGS = {
         'number': 34737,
         'type': None,
     },
+    'ExposureProgram': {
+        'number': 34850,
+        'type': ctypes.c_uint16,
+    },
     'GPSIFD': {
         'number': 34853,
         'type': None,
+    },
+    'ISOSpeedRatings': {
+        'number': 34855,
+        'type': ctypes.c_uint16,
     },
     'HYLAFAXRecvParams': {
         'number': 34908,
@@ -503,13 +519,141 @@ TAGS = {
         'number': 34910,
         'type': None,
     },
+    'ExifVersion': {
+        'number': 36864,
+        'type': ctypes.c_uint8,
+    },
+    'CompressedBitsPerPixel': {
+        'number': 37122,
+        'type': ctypes.c_uint8,
+    },
+    'ShutterSpeedValue': {
+        'number': 37377,
+        'type': ctypes.c_double,
+    },
+    'ApertureValue': {
+        'number': 37378,
+        'type': ctypes.c_double,
+    },
+    'BrightnessValue': {
+        'number': 37379,
+        'type': ctypes.c_double,
+    },
+    'ExposureBiasValue': {
+        'number': 37380,
+        'type': ctypes.c_double,
+    },
+    'MaxApertureValue': {
+        'number': 37381,
+        'type': ctypes.c_double,
+    },
+    'SubjectDistance': {
+        'number': 37382,
+        'type': ctypes.c_double,
+    },
+    'MeteringMode': {
+        'number': 37383,
+        'type': ctypes.c_uint16,
+    },
+    'LightSource': {
+        'number': 37384,
+        'type': ctypes.c_uint16,
+    },
+    'Flash': {
+        'number': 37385,
+        'type': ctypes.c_uint16,
+    },
+    'FocalLength': {
+        'number': 37386,
+        'type': ctypes.c_double,
+    },
     'ImageSourceData': {
         'number': 37724,
         'type': None,
     },
+    'ColorSpace': {
+        'number': 40961,
+        'type': ctypes.c_uint16,
+    },
+    'PixelXDimension': {
+        'number': 40962,
+        'type': ctypes.c_uint64,
+    },
+    'PixelYDimension': {
+        'number': 40963,
+        'type': ctypes.c_uint64,
+    },
     'InteroperabilityIFD': {
         'number': 40965,
         'type': None,
+    },
+    'FocalPlaneXResolution': {
+        'number': 41486,
+        'type': ctypes.c_double,
+    },
+    'FocalPlaneYResolution': {
+        'number': 41487,
+        'type': ctypes.c_double,
+    },
+    'FocalPlaneResolutionUnit': {
+        'number': 41488,
+        'type': ctypes.c_uint16,
+    },
+    'ExposureIndex': {
+        'number': 41493,
+        'type': ctypes.c_double,
+    },
+    'SensingMethod': {
+        'number': 41495,
+        'type': ctypes.c_uint16,
+    },
+    'FileSource': {
+        'number': 41728,
+        'type': ctypes.c_uint8,
+    },
+    'SceneType': {
+        'number': 41729,
+        'type': ctypes.c_uint8,
+    },
+    'ExposureMode': {
+        'number': 41986,
+        'type': ctypes.c_uint16,
+    },
+    'WhiteBalance': {
+        'number': 41987,
+        'type': ctypes.c_uint16,
+    },
+    'DigitalZoomRatio': {
+        'number': 41988,
+        'type': ctypes.c_double,
+    },
+    'FocalLengthIn35mmFilm': {
+        'number': 41989,
+        'type': ctypes.c_uint16,
+    },
+    'SceneCaptureType': {
+        'number': 41990,
+        'type': ctypes.c_uint16,
+    },
+    'GainControl': {
+        'number': 41991,
+        'type': ctypes.c_uint16,
+    },
+    'Contrast': {
+        'number': 41992,
+        'type': ctypes.c_uint16,
+    },
+    'Saturation': {
+        'number': 41993,
+        'type': ctypes.c_uint16,
+    },
+    'Sharpness': {
+        'number': 41994,
+        'type': ctypes.c_uint16,
+    },
+    'SubjectDistanceRange': {
+        'number': 41996,
+        'type': ctypes.c_uint16,
     },
     'GDAL_Metadata': {
         'number': 42112,

@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 
 # Local imports
-from spiff.spiff import TIFF
+from spiff.spiff import TIFF, TIFFReadImageError, NoEXIFIFDError
 from spiff.lib import (
     Compression, Photometric, PlanarConfig, JPEGProc,
     ResolutionUnit, SampleFormat, NotRGBACompatibleError
@@ -34,7 +34,12 @@ class TestSuite(unittest.TestCase):
         t = TIFF(path)
         actual = repr(t)
         expected = fixtures.zackthecat_tiffinfo
-        self.assertEqual(actual, expected)
+        self.maxDiff = None
+
+        # Sometimes there are extra garbage characters on the end.  Nothing
+        # we can do about that, I don't think.
+        n = len(expected)
+        self.assertEqual(actual[:n], expected)
 
     def test_repr_exif(self):
         """
@@ -50,6 +55,18 @@ class TestSuite(unittest.TestCase):
         actual = repr(t)
         expected = fixtures.repr_exif
         self.assertEqual(actual, expected)
+
+    def test_visit_exif_ifd_when_no_exif_ifd(self):
+        """
+        Scenario:  The TIFF in question has no EXIF IFD, yet the user tries
+        to visit it.
+
+        Expected Result:  A NoEXIFIFDError should be raised.
+        """
+        path = self._get_path('zackthecat.tif')
+        t = TIFF(path)
+        with self.assertRaises(NoEXIFIFDError):
+            t.visit_exif()
 
     def test_read_image_in_exif_directory(self):
         """

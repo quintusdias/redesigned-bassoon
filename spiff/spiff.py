@@ -23,6 +23,22 @@ class JPEGColorModeRawError(RuntimeError):
     pass
 
 
+class NoEXIFIFDError(RuntimeError):
+    """
+    Raise this exception if the user tries to change to an EXIF IFD and there
+    is no EXIF IFD.
+    """
+    pass
+
+
+class TIFFReadImageError(RuntimeError):
+    """
+    Raise this exception if a read operation was inappropriate.  Maybe the
+    library will segfault otherwise?
+    """
+    pass
+
+
 class TIFF(object):
     """
     Attributes
@@ -76,6 +92,8 @@ class TIFF(object):
             self.fp = self.path.open(mode='rb')
             self.parse_header()
             self.parse_ifd()
+
+        self._ifd_offsets = []
 
     def __str__(self):
         s = io.StringIO()
@@ -187,7 +205,19 @@ class TIFF(object):
 
     def visit_exif(self):
         if 'ExifIFD' in self.tags.keys():
+            offset = lib.currentDirOffset(self.tfp)
             lib.readEXIFDirectory(self.tfp, self['ExifIFD'])
+
+            # After we've successfully transfered to the new IFD, save the old
+            # offset.
+            self._ifd_offsets.append(offset)
+
+            # And finally, refresh the tags.
+            self.fp.seek(self['ExifIFD'])
+            self.parse_ifd()
+
+        else:
+            raise NoEXIFIFDError('No EXIF IFD in this TIFF.')
 
     def _writeStrippedImage(self, image):
         """
@@ -401,7 +431,9 @@ class TIFF(object):
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
-            if self.rgba:
+            if not ('TileByteCounts' in self.tags.keys() or 'StripByteCounts' in self.tags.keys()):
+                raise TIFFReadImageError('This IFD does not have an image')
+            elif self.rgba:
                 item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
             elif self['Compression'] == lib.Compression.OJPEG:
                 if idx.start is None and idx.stop is None and idx.step is None:
