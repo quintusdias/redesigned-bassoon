@@ -629,6 +629,17 @@ def numberOfTiles(fp):
     return numtiles
 
 
+def readEXIFDirectory(fp, offset):
+    """
+    Corresponds to TIFFReadEXIFIFDDirectory.
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+    ARGTYPES = [ctypes.c_void_p, ctypes.c_uint64]
+    _LIBTIFF.TIFFReadEXIFDirectory.argtypes = ARGTYPES
+    _LIBTIFF.TIFFReadEXIFDirectory.restype = check_error
+    _LIBTIFF.TIFFReadEXIFDirectory(fp, offset)
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
 def readRGBAImageOriented(fp, width=None, height=None,
                           orientation=Orientation.TOPLEFT, stopOnError=0):
     """

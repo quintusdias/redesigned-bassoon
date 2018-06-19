@@ -95,6 +95,11 @@ class TIFF(object):
         return s
 
     @property
+    def exif(self):
+        if 'ExifIFD' in self.tags.keys():
+            lib.readEXIFDirectory(self.tfp, self['ExifIFD'])
+
+    @property
     def rgba(self):
         return self._rgba
 
