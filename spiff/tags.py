@@ -170,6 +170,10 @@ TAGS = {
         'number': 317,
         'type': ctypes.c_uint16,
     },
+    'WhitePoint': {
+        'number': 318,
+        'type': ctypes.c_double,
+    },
     'PrimaryChromaticities': {
         'number': 319,
         'type': None,
