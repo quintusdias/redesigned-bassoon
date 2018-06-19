@@ -1,6 +1,7 @@
 # Local imports
 import pathlib
 import unittest
+import warnings
 
 # Third party library imports
 import numpy as np
@@ -43,7 +44,9 @@ class TestSuite(unittest.TestCase):
         """
         path = self._get_path('b52a2fceb34f9b31cb417379cf8c02ba.tif')
         t = TIFF(path)
-        t.visit_exif()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            t.visit_exif()
         actual = repr(t)
         expected = fixtures.repr_exif
         self.assertEqual(actual, expected)
@@ -51,11 +54,15 @@ class TestSuite(unittest.TestCase):
     def test_read_image_in_exif_directory(self):
         """
         Scenario:  Attempt to read an image from within an EXIF sub ifd.
+        There's no actual image here, and trying to read the image caused
+        libtiff to segfault.  We don't want that.
 
         Expected Result:  A TIFFReadImageError should be raised.
         """
         path = self._get_path('b52a2fceb34f9b31cb417379cf8c02ba.tif')
         t = TIFF(path)
-        t.visit_exif()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            t.visit_exif()
         with self.assertRaises(TIFFReadImageError):
             t[:]

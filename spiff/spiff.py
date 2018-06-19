@@ -95,11 +95,6 @@ class TIFF(object):
         return s
 
     @property
-    def exif(self):
-        if 'ExifIFD' in self.tags.keys():
-            lib.readEXIFDirectory(self.tfp, self['ExifIFD'])
-
-    @property
     def rgba(self):
         return self._rgba
 
@@ -189,6 +184,10 @@ class TIFF(object):
 
         # Close the TIFF file pointer.
         lib.close(self.tfp)
+
+    def visit_exif(self):
+        if 'ExifIFD' in self.tags.keys():
+            lib.readEXIFDirectory(self.tfp, self['ExifIFD'])
 
     def _writeStrippedImage(self, image):
         """
