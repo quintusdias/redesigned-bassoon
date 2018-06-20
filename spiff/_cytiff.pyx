@@ -1,5 +1,3 @@
-#distutils: language=c++
-
 from libcpp.string cimport string
 from libc.stdio cimport FILE, fopen, fread, fclose, tmpfile, rewind, ftell
 

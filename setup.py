@@ -1,13 +1,37 @@
+# Standard library imports ...
+from distutils.core import setup
+from distutils.core import Extension
+import pathlib
+import platform
+import sys
+
 # Third party library imports ...
-from setuptools import setup
-from setuptools.extension import Extension
 from Cython.Build import cythonize
+
+if ((('Anaconda' in sys.version) or
+     ('Continuum Analytics, Inc.' in sys.version) or
+     ('packaged by conda-forge' in sys.version))):
+    # If Anaconda, then openjpeg may have been installed via conda.
+    if platform.system() in ['Linux', 'Darwin']:
+        root = pathlib.Path(sys.executable).parents[1]
+    elif platform.system() == 'Windows':
+        root = pathlib.Path(sys.executable).parents[0]
+    include_dirs = [str(root / 'include')]
+    lib_dirs = [str(root / 'lib')]
+elif platform.system() == 'Darwin':
+    # MacPorts?  HomeBrew?
+    include_dirs = ['/opt/local/include', '/usr/local/include']
+    lib_dirs = ['/opt/local/lib', '/usr/local/lib']
+else:
+    include_dirs = ['/usr/include']
+    lib_dirs = ['/usr/lib', '/usr/lib64']
 
 extension = Extension('spiff._cytiff',
                       sources=['spiff/_cytiff.pyx'],
                       libraries=['tiff', 'jpeg', 'lzma', 'z'],
-                      include_dirs=['/opt/local/include'],
-                      library_dir=['/opt/local/lib'])
+                      include_dirs=include_dirs,
+                      library_dirs=lib_dirs,
+                      language="c++")
 
 kwargs = {
     'name': 'Spiff',
