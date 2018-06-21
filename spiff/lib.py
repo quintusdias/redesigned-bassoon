@@ -647,12 +647,27 @@ def numberOfTiles(fp):
 def readEXIFDirectory(fp, offset):
     """
     Corresponds to TIFFReadEXIFIFDDirectory.
+
+    Use this routine only with the ExifIFD tag.
     """
     err_handler, warn_handler = _set_error_warning_handlers()
     ARGTYPES = [ctypes.c_void_p, ctypes.c_uint64]
     _LIBTIFF.TIFFReadEXIFDirectory.argtypes = ARGTYPES
     _LIBTIFF.TIFFReadEXIFDirectory.restype = check_error
     _LIBTIFF.TIFFReadEXIFDirectory(fp, offset)
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
+def setSubDirectory(fp, offset):
+    """
+    Corresponds to TIFFSetSubDirectory.
+
+    Use this routine with the SubIFDs tag.
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+    ARGTYPES = [ctypes.c_void_p, ctypes.c_uint64]
+    _LIBTIFF.TIFFSetSubDirectory.argtypes = ARGTYPES
+    _LIBTIFF.TIFFSetSubDirectory.restype = check_error
+    _LIBTIFF.TIFFSetSubDirectory(fp, offset)
     _reset_error_warning_handlers(err_handler, warn_handler)
 
 def readRGBAImageOriented(fp, width=None, height=None,

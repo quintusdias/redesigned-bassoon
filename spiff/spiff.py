@@ -203,21 +203,30 @@ class TIFF(object):
         # Close the TIFF file pointer.
         lib.close(self.tfp)
 
-    def visit_exif(self):
-        if 'ExifIFD' in self.tags.keys():
-            offset = lib.currentDirOffset(self.tfp)
-            lib.readEXIFDirectory(self.tfp, self['ExifIFD'])
+    def visit_ifd(self, offset):
+        """
+        Change directories and read the contents of a new IFD.
 
-            # After we've successfully transfered to the new IFD, save the old
-            # offset.
-            self._ifd_offsets.append(offset)
-
-            # And finally, refresh the tags.
-            self.fp.seek(self['ExifIFD'])
-            self.parse_ifd()
-
+        Parameters
+        ----------
+        offset : unsigned integer
+            Offset to the sub ifd.  This should be a value retrieved from the
+            ExifIFD, GPSIfd, or SubIFDs tags.  Providing an incorrect value is
+            a good way to segfault libtiff.
+        """
+        old_offset = lib.currentDirOffset(self.tfp)
+        if 'ExifIFD' in self.tags.keys() and self.tags['ExifIFD'] == offset:
+            lib.readEXIFDirectory(self.tfp, offset)
         else:
-            raise NoEXIFIFDError('No EXIF IFD in this TIFF.')
+            lib.setSubDirectory(self.tfp, offset)
+
+        # After we've successfully transfered to the new IFD, save the old
+        # offset.
+        self._ifd_offsets.append(old_offset)
+
+        # And finally, refresh the tags.
+        self.fp.seek(offset)
+        self.parse_ifd()
 
     def _writeStrippedImage(self, image):
         """
@@ -542,7 +551,11 @@ class TIFF(object):
                 # tuple.
                 payload = payload[0]
 
-        tag_name = self.tagnum2name[tag_num]
+
+        try:
+            tag_name = self.tagnum2name[tag_num]
+        except KeyError:
+            tag_name = str(tag_num)
 
         # Special processing?
         if tag_num == 333:

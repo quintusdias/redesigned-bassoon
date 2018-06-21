@@ -24,9 +24,9 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
-    def test_repr(self):
+    def test_repr_main(self):
         """
-        Scenario:  Test TIFF object representation. 
+        Scenario:  Test TIFF object representation on the main IFD. 
 
         Expected Result:  Should look same as output of tiffinfo.
         """
@@ -51,22 +51,10 @@ class TestSuite(unittest.TestCase):
         t = TIFF(path)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            t.visit_exif()
+            t.visit_ifd(t['ExifIFD'])
         actual = repr(t)
         expected = fixtures.repr_exif
         self.assertEqual(actual, expected)
-
-    def test_visit_exif_ifd_when_no_exif_ifd(self):
-        """
-        Scenario:  The TIFF in question has no EXIF IFD, yet the user tries
-        to visit it.
-
-        Expected Result:  A NoEXIFIFDError should be raised.
-        """
-        path = self._get_path('zackthecat.tif')
-        t = TIFF(path)
-        with self.assertRaises(NoEXIFIFDError):
-            t.visit_exif()
 
     def test_read_image_in_exif_directory(self):
         """
@@ -80,6 +68,6 @@ class TestSuite(unittest.TestCase):
         t = TIFF(path)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            t.visit_exif()
+            t.visit_ifd(t['ExifIFD'])
         with self.assertRaises(TIFFReadImageError):
             t[:]
