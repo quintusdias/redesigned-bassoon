@@ -608,6 +608,68 @@ class TestSuite(unittest.TestCase):
                 metric = skimage.measure.compare_psnr(expected, actual)
                 self.assertTrue(metric > 37)
 
+    def _set_tags(self, t, tags, tiled):
+        """
+        Set all the TIFF tags.
+        """
+
+        if tiled:
+            tags['TileLength'] = int(tags['ImageLength'] / 2)
+            tags['TileWidth'] = int(tags['ImageWidth'] / 2)
+        else:
+            tags['RowsPerStrip'] = int(tags['ImageLength'] / 2)
+
+        for tag, value in tags.items():
+            t[tag] = value
+
+    def test_write_read_ifds(self):
+        """
+        Scenario: Write three copies of the the scikit-image "astronaut" to
+        file in three separate IFDs.  Then read them back.
+
+        Expected Result:  The iteration protocol should yield all three.
+        """
+        expected = skimage.data.astronaut()
+        w, h, nz = expected.shape
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+
+        tags = {
+            'Photometric': lib.Photometric.RGB,
+            'ImageWidth': w,
+            'ImageLength': w,
+            'PlanarConfig': lib.PlanarConfig.CONTIG,
+            'BitsPerSample': 8,
+            'SamplesPerPixel': 3,
+            'Compression': lib.Compression.NONE,
+        }
+
+        g = itertools.product(tiled, modes)
+        for tiled, mode in g:
+            with self.subTest(tiled=tiled, mode=mode):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                    t = TIFF(tfile.name, mode=mode)
+                    self._set_tags(t, tags, tiled)
+                    t[:] = expected
+
+                    t.new_image()
+                    self._set_tags(t, tags, tiled)
+                    t[:] = expected
+
+                    t.new_image()
+                    self._set_tags(t, tags, tiled)
+                    t[:] = expected
+
+                    del t
+
+                    t = TIFF(tfile.name)
+                    self.assertEqual(len(t), 3)
+
+                    actuals = [t[:] for t in TIFF(tfile.name)]
+                    for actual in actuals:
+                        np.testing.assert_equal(actual, expected)
+
     def test_write_read_rgb(self):
         """
         Scenario: Write the scikit-image "astronaut" to file.

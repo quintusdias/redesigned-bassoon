@@ -610,6 +610,23 @@ def isTiled(fp):
     return status
 
 
+def numberOfDirectories(fp):
+    """
+    Corresponds to TIFFNumberOfDirectories.
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+
+    ARGTYPES = [ctypes.c_void_p]
+    _LIBTIFF.TIFFNumberOfDirectories.argtypes = ARGTYPES
+    _LIBTIFF.TIFFNumberOfDirectories.restype = ctypes.c_uint16
+
+    n = _LIBTIFF.TIFFNumberOfDirectories(fp)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
+    return n
+
+
 def numberOfStrips(fp):
     """
     Corresponds to TIFFNumberOfStrips.
@@ -655,6 +672,17 @@ def readEXIFDirectory(fp, offset):
     _LIBTIFF.TIFFReadEXIFDirectory.argtypes = ARGTYPES
     _LIBTIFF.TIFFReadEXIFDirectory.restype = check_error
     _LIBTIFF.TIFFReadEXIFDirectory(fp, offset)
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
+def readDirectory(fp):
+    """
+    Corresponds to TIFFReadDirectory.
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+    ARGTYPES = [ctypes.c_void_p]
+    _LIBTIFF.TIFFReadDirectory.argtypes = ARGTYPES
+    _LIBTIFF.TIFFReadDirectory.restype = check_error
+    _LIBTIFF.TIFFReadDirectory(fp)
     _reset_error_warning_handlers(err_handler, warn_handler)
 
 def setSubDirectory(fp, offset):
@@ -741,6 +769,17 @@ def setWarningHandler(func=_WARNING_HANDLER):
     old_warning_handler = _LIBTIFF.TIFFSetWarningHandler(func)
     return old_warning_handler
 
+
+def writeDirectory(fp):
+    """
+    Corresponds to TIFFWriteDirectory.
+    """
+    err_handler, warn_handler = _set_error_warning_handlers()
+    ARGTYPES = [ctypes.c_void_p]
+    _LIBTIFF.TIFFWriteDirectory.argtypes = ARGTYPES
+    _LIBTIFF.TIFFWriteDirectory.restype = check_error
+    _LIBTIFF.TIFFWriteDirectory(fp)
+    _reset_error_warning_handlers(err_handler, warn_handler)
 
 def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
     """

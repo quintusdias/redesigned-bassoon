@@ -95,6 +95,42 @@ class TIFF(object):
 
         self._ifd_offsets = []
 
+    def __iter__(self):
+        """
+        We are our own iterator.
+        """
+        self._first_iteration = True
+        return self
+
+    def __next__(self):
+        """
+        Return the next IFD.  That really just means to position this object
+        at the next IFD.
+        """
+        if self._first_iteration:
+            # The first time we iterate, just return ourself in our current
+            # state.  Otherwise the iteration misses the first image.  Of
+            # course, we have to flag so that we don't keep doing that.
+            self._first_iteration = False
+            return self
+
+        if self.next_offset == 0:
+            # We are done, cannot go on to the next image because there isn't
+            # one.
+            raise StopIteration()
+
+        old_offset = lib.currentDirOffset(self.tfp)
+        self._ifd_offsets.append(old_offset)
+
+        # Go to the next IFD, both in libtiff-land, and in python-file-world.
+        lib.readDirectory(self.tfp)
+        self.fp.seek(self.next_offset)
+        self.parse_ifd()
+        return self
+
+    def __len__(self):
+        return lib.numberOfDirectories(self.tfp)
+
     def __str__(self):
         s = io.StringIO()
         pp = pprint.PrettyPrinter(stream=s, indent=4)
@@ -111,6 +147,17 @@ class TIFF(object):
         b = _cytiff.print_directory(self.tfp)
         s = b.decode('utf-8', 'ignore')
         return s
+
+    def __del__(self):
+        """
+        Perform any needed resource clean-up.
+        """
+        # Close the Python file pointer.
+        if self.fp is not None:
+            self.fp.close()
+
+        # Close the TIFF file pointer.
+        lib.close(self.tfp)
 
     @property
     def rgba(self):
@@ -192,16 +239,13 @@ class TIFF(object):
         """
         return self['SamplesPerPixel']
 
-    def __del__(self):
+    def new_image(self):
         """
-        Perform any needed resource clean-up.
+        Initialize the next image in this multi-page tiff.
         """
-        # Close the Python file pointer.
-        if self.fp is not None:
-            self.fp.close()
-
-        # Close the TIFF file pointer.
-        lib.close(self.tfp)
+        old_offset = lib.currentDirOffset(self.tfp)
+        self._ifd_offsets.append(old_offset)
+        lib.writeDirectory(self.tfp)
 
     def back(self):
         """
