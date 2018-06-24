@@ -11,6 +11,7 @@ Welcome to spiff's documentation!
    :caption: Contents:
 
    introduction
+   how_do_i
    modules
 
 
