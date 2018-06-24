@@ -103,7 +103,14 @@ class NotRGBACompatibleError(RuntimeError):
 
 class Compression(IntEnum):
     """
-    Corresponds to COMPRESSION_* values listed in tiff.h
+    Compression scheme used on the image data.
+
+    The enumerated values here correspond to COMPRESSION_* values listed in
+    tiff.h.
+
+    See Also
+    --------
+    Photometric : The color space of the image data.
     """
     NONE = 1
     CCITTRLE = 2  # CCITT modified Huffman RLE
@@ -134,33 +141,54 @@ class Compression(IntEnum):
 
 class ExtraSamples(IntEnum):
     """
-    Enumeration corresponding to EXTRASAMPLE_* values listed in tiff.h
+    Description of extra components.
+
+    The values enumerated here correspond to EXTRASAMPLE_* values listed in
+    tiff.h.
 
     Examples
     --------
-    >>> import numpy as np
+
+    Load a greyscale image from scikit-image.
+
     >>> import skimage.data
-    >>> from spiff import TIFF, lib
     >>> gray = skimage.data.camera().reshape((512, 512, 1))
-    >>> # Create a gradient alpha layer.
+    >>> w, h, nz = gray.shape
+
+    Create a gradient alpha layer and tack it onto the image.
+
+    >>> import numpy as np
     >>> x = np.arange(0, 256, 0.5).astype(np.uint8).reshape(512, 1)
     >>> alpha = np.repeat(x, 512, axis=1).reshape((512, 512, 1))
     >>> image = np.concatenate((gray, alpha), axis=2)
-    >>> w, h, nz = image.shape
-    >>> tw, th = int(w/2), int(h/2)
+
+    Create a BigTIFF of the image and alpha layer.
+
+    >>> from spiff import TIFF, lib
     >>> t = TIFF('camera-extrasamples.tif', mode='w8')
     >>> t['Photometric'] = lib.Photometric.MINISBLACK
     >>> t['Compression'] = lib.Compression.NONE
     >>> t['ImageWidth'] = w
     >>> t['ImageLength'] = h
     >>> t['BitsPerSample'] = 8
-    >>> t['SamplesPerPixel'] = nz
+    >>> t['SamplesPerPixel'] = 2
     >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+    >>> tw, th = int(w/2), int(h/2)
     >>> t['TileLength'] = th
     >>> t['TileWidth'] = tw
     >>> t['ExtraSamples'] = (lib.ExtraSamples.ASSOCALPHA, )
     >>> t[:] = image
-
+    >>> t
+    TIFF Directory at offset 0x0 (0)
+      Image Width: 512 Image Length: 512
+      Tile Width: 256 Tile Length: 256
+      Bits/Sample: 8
+      Compression Scheme: None
+      Photometric Interpretation: min-is-black
+      Extra Samples: 1<assoc-alpha>
+      Samples/Pixel: 2
+      Planar Configuration: single image plane
+    <BLANKLINE>
     """
     UNSPECIFIED = 0
     ASSOCALPHA = 1
@@ -199,14 +227,25 @@ class Orientation(IntEnum):
 
 class Photometric(IntEnum):
     """
-    Corresponds to TIFFTAG_PHOTOMETRIC* values listed in tiff.h
+    The color space of the image data.
+    
+    The enumerated values here correspond to TIFFTAG_PHOTOMETRIC* values listed
+    in tiff.h
 
     Examples
     --------
+
+    Load test image of astronaut Eileen Collins from scikit-image.
+
     >>> import numpy as np
     >>> import skimage.data
-    >>> from spiff import TIFF, lib
     >>> image = skimage.data.astronaut()
+
+    Create a BigTIFF with JPEG compression.  There is not much reason to do
+    this if you do not also specify YCbCr as the photometric interpretation.
+
+    >>> w, h, nz = image.shape
+    >>> from spiff import TIFF, lib
     >>> t = TIFF('astronaut-jpeg.tif', mode='w8')
     >>> t['Photometric'] = lib.Photometric.YCBCR
     >>> t['Compression'] = lib.Compression.JPEG
@@ -214,7 +253,6 @@ class Photometric(IntEnum):
     >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
     >>> t['JPEGQuality'] = 90
     >>> t['YCbCrSubsampling'] = (1, 1)
-    >>> w, h, nz = image.shape
     >>> t['ImageWidth'] = w
     >>> t['ImageLength'] = h
     >>> t['TileWidth'] = int(w/2)
@@ -223,6 +261,25 @@ class Photometric(IntEnum):
     >>> t['SamplesPerPixel'] = nz
     >>> t['Software'] = lib.getVersion()
     >>> t[:] = image
+    >>> t
+    TIFF Directory at offset 0x0 (0)
+      Image Width: 512 Image Length: 512
+      Tile Width: 256 Tile Length: 256
+      Bits/Sample: 8
+      Compression Scheme: JPEG
+      Photometric Interpretation: YCbCr
+      YCbCr Subsampling: 1, 1
+      Samples/Pixel: 3
+      Planar Configuration: single image plane
+      Reference Black/White:
+         0:     0   255
+         1:   128   255
+         2:   128   255
+      Software: LIBTIFF, Version 4.0.9
+    Copyright (c) 1988-1996 Sam Leffler
+    Copyright (c) 1991-1996 Silicon Graphics, Inc.
+      JPEG Tables: (574 bytes)
+    <BLANKLINE>
     """
     MINISWHITE = 0  # value is white
     MINISBLACK = 1  # value is black
@@ -241,7 +298,12 @@ class Photometric(IntEnum):
 
 class JPEGColorMode(IntEnum):
     """
-    Corresponds to TIFFTAG_JPEGCOLORMODE values listed in tiff.h
+    When writing images with photometric interpretation equal to YCbCr and
+    compression equal to JPEG, the pseudo tag JPEGColorMode should usually be
+    set to RGB, unless the image values truly are in YCbCr.
+
+    The enumerated values here correspond to TIFFTAG_JPEGCOLORMODE values
+    listed in tiff.h
     """
     RAW = 0
     RGB = 1
@@ -266,7 +328,13 @@ class OSubFileType(IntEnum):
 
 class PlanarConfig(IntEnum):
     """
-    Corresponds to TIFFTAG_PLANARCONFIG* values listed in tiff.h
+    How the components of each pixel are stored.
+
+    The enumerated values here correspond to TIFFTAG_PLANARCONFIG* values
+    listed in tiff.h
+
+    Writing images with a PlanarConfig value of PlanarConfig.SEPARATE is not
+    currently supported.
     """
     CONTIG = 1  # single image plane
     SEPARATE = 2  # separate planes of data
@@ -278,22 +346,26 @@ class Predictor(IntEnum):
 
     Examples
     --------
+
+    Write a TIFF file from an image of astronaut Eileen Collins in scikit-image
+    using LZW compression using horizontal differencing.
+
     >>> import skimage.data
     >>> from spiff import TIFF, lib
     >>> image = skimage.data.astronaut()
     >>> h, w, nz = image.shape
+
     >>> t = TIFF('astronaut-predictor.tif', mode='w8')
     >>> t['Photometric'] = lib.Photometric.RGB
     >>> t['Compression'] = lib.Compression.LZW
     >>> t['Predictor'] = lib.Predictor.HORIZONTAL
-    >>> t['BitsPerSample'] = 8
     >>> t['ImageWidth'] = w
     >>> t['ImageLength'] = h
+    >>> t['BitsPerSample'] = 8
     >>> t['SamplesPerPixel'] = nz
     >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
     >>> t['TileLength'] = int(h/2)
     >>> t['TileWidth'] = int(w/2)
-    >>> t['Software'] = 'SPIFF!'
     >>> t[:] = image
     """
     NONE = 1
