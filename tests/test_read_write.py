@@ -622,6 +622,81 @@ class TestSuite(unittest.TestCase):
         for tag, value in tags.items():
             t[tag] = value
 
+    def test_write_read_subifds(self):
+        """
+        Scenario: Write an IFD for the scikit-image astronaut, including two
+        subIFDs of the same image.
+
+        Expected Result:  The length of the tiff object should only be one,
+        but the SubIFD tag should indicate two subIFDs.
+        """
+        expected = skimage.data.astronaut()
+        w, h, nz = expected.shape
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+
+        tags = {
+            'Photometric': lib.Photometric.RGB,
+            'ImageWidth': w,
+            'ImageLength': w,
+            'PlanarConfig': lib.PlanarConfig.CONTIG,
+            'BitsPerSample': 8,
+            'SamplesPerPixel': 3,
+            'Compression': lib.Compression.NONE,
+        }
+
+        for tiled, mode in itertools.product(tiled, modes):
+            with self.subTest(tiled=tiled, mode=mode):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+                    t = TIFF(tfile.name, mode=mode)
+                    self._set_tags(t, tags, tiled)
+
+                    # Now write the sub IFD tag.
+                    t['SubIFDs'] = 2
+
+                    # And finally write the primary image.
+                    t[:] = expected
+
+                    # Position to the first subIFD
+                    t.new_image()
+                    self._set_tags(t, tags, tiled)
+                    t['ImageDescription'] = 'SubIFD #1'
+                    t[:] = expected
+
+                    # Position to the second subIFD
+                    t.new_image()
+                    self._set_tags(t, tags, tiled)
+                    t['ImageDescription'] = 'SubIFD #2'
+                    t[:] = expected
+
+                    del t
+
+                    t = TIFF(tfile.name)
+
+                    # Verify the primary image.
+                    actual = t[:]
+                    np.testing.assert_equal(actual, expected)
+
+                    # Verify there are no following IFDs, that the two other
+                    # images were written as subIFDs.
+                    self.assertEqual(len(t), 1)
+                    self.assertEqual(len(t['SubIFDs']), 2)
+
+                    # Verify the first subIFD.
+                    t.visit_ifd(t['SubIFDs'][0])
+                    actual = t[:]
+                    np.testing.assert_equal(actual, expected)
+                    self.assertEqual(t['ImageDescription'], 'SubIFD #1')
+
+                    t.back()
+
+                    # Verify the second subIFD.
+                    t.visit_ifd(t['SubIFDs'][1])
+                    actual = t[:]
+                    np.testing.assert_equal(actual, expected)
+                    self.assertEqual(t['ImageDescription'], 'SubIFD #2')
+
     def test_write_read_ifds(self):
         """
         Scenario: Write three copies of the the scikit-image "astronaut" to
@@ -645,8 +720,7 @@ class TestSuite(unittest.TestCase):
             'Compression': lib.Compression.NONE,
         }
 
-        g = itertools.product(tiled, modes)
-        for tiled, mode in g:
+        for tiled, mode in itertools.product(tiled, modes):
             with self.subTest(tiled=tiled, mode=mode):
                 with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
                     t = TIFF(tfile.name, mode=mode)

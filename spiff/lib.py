@@ -135,7 +135,7 @@ class Compression(IntEnum):
 class ExtraSamples(IntEnum):
     """
     Enumeration corresponding to EXTRASAMPLE_* values listed in tiff.h
-    
+
     Examples
     --------
     >>> import numpy as np
@@ -200,7 +200,7 @@ class Orientation(IntEnum):
 class Photometric(IntEnum):
     """
     Corresponds to TIFFTAG_PHOTOMETRIC* values listed in tiff.h
-    
+
     Examples
     --------
     >>> import numpy as np
@@ -386,6 +386,7 @@ def currentDirOffset(fp):
 
     return offset
 
+
 def open(filename, mode='r'):
     """
     Corresponds to TIFFOpen
@@ -421,10 +422,14 @@ def setField(fp, tag, value):
     # Append the proper return type for the tag.
     tag_num = TAGS[tag]['number']
     tag_type = TAGS[tag]['type']
-    if tag_num == 333:
+    if tag_num == 330:
+        # SubIFDs
+        ARGTYPES.extend([ctypes.c_uint16, ctypes.POINTER(ctypes.c_uint64)])
+    elif tag_num == 333:
         # InkNames
         ARGTYPES.extend([ctypes.c_uint16, ctypes.c_char_p])
     elif tag_num == 338:
+        # ExtraSamples
         ARGTYPES.extend([ctypes.c_uint16, ctypes.POINTER(ctypes.c_uint16)])
     elif tag_num == 530:
         ARGTYPES.extend(tag_type)
@@ -433,7 +438,18 @@ def setField(fp, tag, value):
     _LIBTIFF.TIFFSetField.argtypes = ARGTYPES
     _LIBTIFF.TIFFSetField.restype = check_error
 
-    if tag_num == 333:
+    if tag_num == 330:
+        # SubIFDs:  the array value should just be zeros.  No need for the
+        # user to pass anything but the count.
+        n = value
+        arr = (ctypes.c_uint64 * n)()
+        for j in range(n):
+            arr[j] = 0
+
+        _LIBTIFF.TIFFSetField(fp, tag_num, n, arr)
+
+    elif tag_num == 333:
+        # InkNames
         # Input is an iterable of strings.  Turn it into a null-terminated and
         # null-separated single string.
         inks = '\0'.join(value) + '\0'
@@ -442,6 +458,7 @@ def setField(fp, tag, value):
         _LIBTIFF.TIFFSetField(fp, tag_num, n, ctypes.c_char_p(inks))
 
     elif tag_num == 338:
+        # ExtraSamples
         # We pass a count and an array of values.
         try:
             n = len(value)
@@ -674,6 +691,7 @@ def readEXIFDirectory(fp, offset):
     _LIBTIFF.TIFFReadEXIFDirectory(fp, offset)
     _reset_error_warning_handlers(err_handler, warn_handler)
 
+
 def readDirectory(fp):
     """
     Corresponds to TIFFReadDirectory.
@@ -684,6 +702,7 @@ def readDirectory(fp):
     _LIBTIFF.TIFFReadDirectory.restype = check_error
     _LIBTIFF.TIFFReadDirectory(fp)
     _reset_error_warning_handlers(err_handler, warn_handler)
+
 
 def setSubDirectory(fp, offset):
     """
@@ -697,6 +716,7 @@ def setSubDirectory(fp, offset):
     _LIBTIFF.TIFFSetSubDirectory.restype = check_error
     _LIBTIFF.TIFFSetSubDirectory(fp, offset)
     _reset_error_warning_handlers(err_handler, warn_handler)
+
 
 def readRGBAImageOriented(fp, width=None, height=None,
                           orientation=Orientation.TOPLEFT, stopOnError=0):
@@ -780,6 +800,7 @@ def writeDirectory(fp):
     _LIBTIFF.TIFFWriteDirectory.restype = check_error
     _LIBTIFF.TIFFWriteDirectory(fp)
     _reset_error_warning_handlers(err_handler, warn_handler)
+
 
 def writeEncodedStrip(fp, stripnum, stripdata, size=-1):
     """

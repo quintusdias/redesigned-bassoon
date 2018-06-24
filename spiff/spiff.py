@@ -55,17 +55,22 @@ class TIFF(object):
     """
     tagnum2name = tags.tagnum2name
 
-    datatype2fmt = {1: ('B', 1),
-                    2: ('B', 1),
-                    3: ('H', 2),
-                    4: ('I', 4),
-                    5: ('II', 8),
-                    7: ('B', 1),
-                    9: ('i', 4),
-                    10: ('ii', 8),
-                    11: ('f', 4),
-                    12: ('d', 8),
-                    16: ('Q', 8)}
+    # Map the enumerated TIFF datatypes to python.
+    datatype2fmt = {
+        1: ('B', 1),
+        2: ('B', 1),
+        3: ('H', 2),
+        4: ('I', 4),
+        5: ('II', 8),
+        7: ('B', 1),
+        9: ('i', 4),
+        10: ('ii', 8),
+        11: ('f', 4),
+        12: ('d', 8),
+        13: ('I', 4),
+        16: ('Q', 8),
+        18: ('Q', 8)
+    }
 
     def __init__(self, path, mode='r'):
         """
@@ -495,7 +500,8 @@ class TIFF(object):
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
-            if not ('TileByteCounts' in self.tags.keys() or 'StripByteCounts' in self.tags.keys()):
+            if not (('TileByteCounts' in self.tags.keys()) or
+                    ('StripByteCounts' in self.tags.keys())):
                 raise TIFFReadImageError('This IFD does not have an image')
             elif self.rgba:
                 item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
@@ -605,7 +611,6 @@ class TIFF(object):
                 # If just a single value, then return a scalar instead of a
                 # tuple.
                 payload = payload[0]
-
 
         try:
             tag_name = self.tagnum2name[tag_num]

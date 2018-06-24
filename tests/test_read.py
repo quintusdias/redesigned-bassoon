@@ -13,7 +13,6 @@ from spiff.lib import (
     Compression, Photometric, PlanarConfig, JPEGProc,
     ResolutionUnit, SampleFormat, NotRGBACompatibleError
 )
-from . import fixtures
 
 
 class TestSuite(unittest.TestCase):

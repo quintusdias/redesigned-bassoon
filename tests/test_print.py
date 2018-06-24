@@ -3,15 +3,8 @@ import pathlib
 import unittest
 import warnings
 
-# Third party library imports
-import numpy as np
-
 # Local imports
-from spiff.spiff import TIFF, TIFFReadImageError, NoEXIFIFDError
-from spiff.lib import (
-    Compression, Photometric, PlanarConfig, JPEGProc,
-    ResolutionUnit, SampleFormat, NotRGBACompatibleError
-)
+from spiff.spiff import TIFF, TIFFReadImageError
 from . import fixtures
 
 
@@ -26,7 +19,7 @@ class TestSuite(unittest.TestCase):
 
     def test_repr_main(self):
         """
-        Scenario:  Test TIFF object representation on the main IFD. 
+        Scenario:  Test TIFF object representation on the main IFD.
 
         Expected Result:  Should look same as output of tiffinfo.
         """
