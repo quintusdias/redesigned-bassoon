@@ -105,9 +105,6 @@ class Compression(IntEnum):
     """
     Compression scheme used on the image data.
 
-    The enumerated values here correspond to COMPRESSION_* values listed in
-    tiff.h.
-
     See Also
     --------
     Photometric : The color space of the image data.
@@ -142,9 +139,6 @@ class Compression(IntEnum):
 class ExtraSamples(IntEnum):
     """
     Description of extra components.
-
-    The values enumerated here correspond to EXTRASAMPLE_* values listed in
-    tiff.h.
 
     Examples
     --------
@@ -198,8 +192,6 @@ class ExtraSamples(IntEnum):
 class FillOrder(IntEnum):
     """
     The logical order of bits within a byte.
-
-    These values correspond to TIFFTAG_FILLORDER* values listed in tiff.h
     """
     MSB2LSB = 1  # most significant -> least
     LSB2MSB = 2  # least significant -> most
@@ -208,8 +200,6 @@ class FillOrder(IntEnum):
 class InkSet(IntEnum):
     """
     The set of inks used in a separated (PhotometricInterpretation=5) image.
-
-    These values correspond to INKSET** values enumerated in tiff.h.
     """
     CMYK = 1
     MULTIINK = 2
@@ -218,8 +208,6 @@ class InkSet(IntEnum):
 class Orientation(IntEnum):
     """
     The orientation of the image with respect to the rows and columns.
-
-    Corresponds to ORIENTATION_* values listed in tiff.h
     """
     TOPLEFT = 1  # row 0 top, col 0 lhs */
     TOPRIGHT = 2  # row 0 top, col 0 rhs */
@@ -235,9 +223,6 @@ class Photometric(IntEnum):
     """
     The color space of the image data.
     
-    The enumerated values here correspond to TIFFTAG_PHOTOMETRIC* values listed
-    in tiff.h
-
     Examples
     --------
 
@@ -308,9 +293,6 @@ class JPEGColorMode(IntEnum):
     compression equal to JPEG, the pseudo tag JPEGColorMode should usually be
     set to RGB, unless the image values truly are in YCbCr.
 
-    The enumerated values here correspond to TIFFTAG_JPEGCOLORMODE values
-    listed in tiff.h
-
     See Also
     --------
     Photometric : The color space of the image data.
@@ -323,8 +305,6 @@ class JPEGProc(IntEnum):
     """
     Old-style JPEG compression field. TechNote2 invalidates this
     part of the specification.
-
-    These values corresponds to JPEGPROC* values enumerated in tiff.h.
     """
     BASELINE = 1
     LOSSLESS = 14
@@ -333,8 +313,6 @@ class JPEGProc(IntEnum):
 class OSubFileType(IntEnum):
     """
     A general indication of the kind of data contained in this subfile.
-
-    These values corresponds to OFILETYPE* values enumerated in tiff.h.
     """
     IMAGE = 1
     REDUCEDIMAGE = 2
@@ -344,9 +322,6 @@ class OSubFileType(IntEnum):
 class PlanarConfig(IntEnum):
     """
     How the components of each pixel are stored.
-
-    These values correspond to TIFFTAG_PLANARCONFIG* values enumerated in
-    tiff.h
 
     Writing images with a PlanarConfig value of PlanarConfig.SEPARATE is not
     currently supported.
@@ -359,8 +334,6 @@ class Predictor(IntEnum):
     """
     A mathematical operator that is applied to the image data before
     an encoding scheme is applied.
-
-    These values correspond to PREDICTOR* values enumerated in tiff.h.
 
     Examples
     --------
@@ -409,8 +382,6 @@ class Predictor(IntEnum):
 class ResolutionUnit(IntEnum):
     """
     The unit of measurement for XResolution and YResolution.
-
-    These values correspond to RESUNIT* values enumerated in tiff.h.
     """
     NONE = 1
     INCH = 2
@@ -420,8 +391,6 @@ class ResolutionUnit(IntEnum):
 class SampleFormat(IntEnum):
     """
     Specifies how to interpret each data sample in a pixel.
-
-    These values correspond to SAMPLEFORMAT* values enumerated in tiff.h.
     """
     UINT = 1
     INT = 2
@@ -434,8 +403,6 @@ class SampleFormat(IntEnum):
 class SubFileType(IntEnum):
     """
     A general indication of the kind of data contained in this subfile.
-
-    These values correspond to FILETYPE* values enumerated in tiff.h.
     """
     REDUCEDIMAGE = 1
     PAGE = 2
@@ -447,8 +414,6 @@ class THRESHHOLDING(IntEnum):
     For black and white TIFF files that represent shades of gray,
     the technique used to convert from gray to black and white
     pixels.
-
-    These correspond to THRESHHOLD* values enumerated in tiff.h.
     """
     BILEVEL = 1
     HALFTONE = 2
@@ -458,8 +423,6 @@ class THRESHHOLDING(IntEnum):
 class T4Options(IntEnum):
     """
     Options for Group 3 Fax compression.
-
-    These correspond to GROUP3OPT* values enumerated in tiff.h.
     """
     TWOD_ENCODING = 1
     UNCOMPRESSED = 2
@@ -470,8 +433,6 @@ class YCbCrPosition(IntEnum):
     """
     Specifies the positioning of subsampled chrominance components
     relative to luminance samples.
-
-    These corresponds to YCBCRPOSITION* values enumerated in tiff.h.
     """
     CENTERED = 1
     COSITED = 2
