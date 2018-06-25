@@ -197,7 +197,9 @@ class ExtraSamples(IntEnum):
 
 class FillOrder(IntEnum):
     """
-    Corresponds to TIFFTAG_FILLORDER* values listed in tiff.h
+    The logical order of bits within a byte.
+
+    These values correspond to TIFFTAG_FILLORDER* values listed in tiff.h
     """
     MSB2LSB = 1  # most significant -> least
     LSB2MSB = 2  # least significant -> most
@@ -205,7 +207,9 @@ class FillOrder(IntEnum):
 
 class InkSet(IntEnum):
     """
-    Corresponds to INKSET** values listed in tiff.h
+    The set of inks used in a separated (PhotometricInterpretation=5) image.
+
+    These values correspond to INKSET** values enumerated in tiff.h.
     """
     CMYK = 1
     MULTIINK = 2
@@ -213,6 +217,8 @@ class InkSet(IntEnum):
 
 class Orientation(IntEnum):
     """
+    The orientation of the image with respect to the rows and columns.
+
     Corresponds to ORIENTATION_* values listed in tiff.h
     """
     TOPLEFT = 1  # row 0 top, col 0 lhs */
@@ -235,7 +241,7 @@ class Photometric(IntEnum):
     Examples
     --------
 
-    Load test image of astronaut Eileen Collins from scikit-image.
+    Load an image of astronaut Eileen Collins from scikit-image.
 
     >>> import numpy as np
     >>> import skimage.data
@@ -304,6 +310,10 @@ class JPEGColorMode(IntEnum):
 
     The enumerated values here correspond to TIFFTAG_JPEGCOLORMODE values
     listed in tiff.h
+
+    See Also
+    --------
+    Photometric : The color space of the image data.
     """
     RAW = 0
     RGB = 1
@@ -311,7 +321,10 @@ class JPEGColorMode(IntEnum):
 
 class JPEGProc(IntEnum):
     """
-    Corresponds to JPEGPROC* values listed in tiff.h
+    Old-style JPEG compression field. TechNote2 invalidates this
+    part of the specification.
+
+    These values corresponds to JPEGPROC* values enumerated in tiff.h.
     """
     BASELINE = 1
     LOSSLESS = 14
@@ -319,7 +332,9 @@ class JPEGProc(IntEnum):
 
 class OSubFileType(IntEnum):
     """
-    Corresponds to OFILETYPE* values listed in tiff.h
+    A general indication of the kind of data contained in this subfile.
+
+    These values corresponds to OFILETYPE* values enumerated in tiff.h.
     """
     IMAGE = 1
     REDUCEDIMAGE = 2
@@ -330,8 +345,8 @@ class PlanarConfig(IntEnum):
     """
     How the components of each pixel are stored.
 
-    The enumerated values here correspond to TIFFTAG_PLANARCONFIG* values
-    listed in tiff.h
+    These values correspond to TIFFTAG_PLANARCONFIG* values enumerated in
+    tiff.h
 
     Writing images with a PlanarConfig value of PlanarConfig.SEPARATE is not
     currently supported.
@@ -342,18 +357,25 @@ class PlanarConfig(IntEnum):
 
 class Predictor(IntEnum):
     """
-    Enumeration corresponding to PREDICTOR* values listed in tiff.h
+    A mathematical operator that is applied to the image data before
+    an encoding scheme is applied.
+
+    These values correspond to PREDICTOR* values enumerated in tiff.h.
 
     Examples
     --------
 
-    Write a TIFF file from an image of astronaut Eileen Collins in scikit-image
-    using LZW compression using horizontal differencing.
+    Load an image of astronaut Eileen Collins from scikit-image.
 
     >>> import skimage.data
     >>> from spiff import TIFF, lib
     >>> image = skimage.data.astronaut()
     >>> h, w, nz = image.shape
+
+    Write the image to TIFF using LZW compression with horizontal differencing.
+    Write a TIFF file from an image of astronaut Eileen Collins in scikit-image
+    using LZW compression using horizontal differencing.  This may result in
+    a smaller file than the default value of lib.Predictor.NONE.
 
     >>> t = TIFF('astronaut-predictor.tif', mode='w8')
     >>> t['Photometric'] = lib.Photometric.RGB
@@ -367,6 +389,17 @@ class Predictor(IntEnum):
     >>> t['TileLength'] = int(h/2)
     >>> t['TileWidth'] = int(w/2)
     >>> t[:] = image
+    >>> t
+    TIFF Directory at offset 0x0 (0)
+      Image Width: 512 Image Length: 512
+      Tile Width: 256 Tile Length: 256
+      Bits/Sample: 8
+      Compression Scheme: LZW
+      Photometric Interpretation: RGB color
+      Samples/Pixel: 3
+      Planar Configuration: single image plane
+      Predictor: horizontal differencing 2 (0x2)
+    <BLANKLINE>
     """
     NONE = 1
     HORIZONTAL = 2
@@ -375,7 +408,9 @@ class Predictor(IntEnum):
 
 class ResolutionUnit(IntEnum):
     """
-    Corresponds to RESUNIT* values listed in tiff.h
+    The unit of measurement for XResolution and YResolution.
+
+    These values correspond to RESUNIT* values enumerated in tiff.h.
     """
     NONE = 1
     INCH = 2
@@ -384,7 +419,9 @@ class ResolutionUnit(IntEnum):
 
 class SampleFormat(IntEnum):
     """
-    Corresponds to values listed in tiff.h
+    Specifies how to interpret each data sample in a pixel.
+
+    These values correspond to SAMPLEFORMAT* values enumerated in tiff.h.
     """
     UINT = 1
     INT = 2
@@ -396,7 +433,9 @@ class SampleFormat(IntEnum):
 
 class SubFileType(IntEnum):
     """
-    Corresponds to FILETYPE* values listed in tiff.h
+    A general indication of the kind of data contained in this subfile.
+
+    These values correspond to FILETYPE* values enumerated in tiff.h.
     """
     REDUCEDIMAGE = 1
     PAGE = 2
@@ -405,7 +444,11 @@ class SubFileType(IntEnum):
 
 class THRESHHOLDING(IntEnum):
     """
-    Corresponds to THRESHHOLD* values listed in tiff.h
+    For black and white TIFF files that represent shades of gray,
+    the technique used to convert from gray to black and white
+    pixels.
+
+    These correspond to THRESHHOLD* values enumerated in tiff.h.
     """
     BILEVEL = 1
     HALFTONE = 2
@@ -414,7 +457,9 @@ class THRESHHOLDING(IntEnum):
 
 class T4Options(IntEnum):
     """
-    Corresponds to GROUP3OPT* values listed in tiff.h
+    Options for Group 3 Fax compression.
+
+    These correspond to GROUP3OPT* values enumerated in tiff.h.
     """
     TWOD_ENCODING = 1
     UNCOMPRESSED = 2
@@ -423,7 +468,10 @@ class T4Options(IntEnum):
 
 class YCbCrPosition(IntEnum):
     """
-    Corresponds to YCBCRPOSITION* values listed in tiff.h
+    Specifies the positioning of subsampled chrominance components
+    relative to luminance samples.
+
+    These corresponds to YCBCRPOSITION* values enumerated in tiff.h.
     """
     CENTERED = 1
     COSITED = 2
