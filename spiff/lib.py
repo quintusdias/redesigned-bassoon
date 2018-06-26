@@ -313,6 +313,10 @@ class JPEGProc(IntEnum):
 class OSubFileType(IntEnum):
     """
     A general indication of the kind of data contained in this subfile.
+
+    .. deprecated:: 0.1.0
+        This class is deprecated. The NewSubfileType field should be used
+        instead.
     """
     IMAGE = 1
     REDUCEDIMAGE = 2
@@ -400,7 +404,7 @@ class SampleFormat(IntEnum):
     COMPLEXIEEEP = 6
 
 
-class SubFileType(IntEnum):
+class NewSubFileType(IntEnum):
     """
     A general indication of the kind of data contained in this subfile.
     """
@@ -864,16 +868,25 @@ def setSubDirectory(fp, offset):
 
 
 def readRGBAImageOriented(fp, width=None, height=None,
-                          orientation=Orientation.TOPLEFT, stopOnError=0):
+                          orientation=Orientation.TOPLEFT):
     """
-    Corresponds to TIFFReadRGBAImage
+    Read an image as if it were RGBA.
 
-    int  TIFFReadRGBAImageOriented(
-        TIFF  *tif,
-        uint32 width, uint32 height,
-        uint32 *raster,
-        int orientation, int stopOnError
-    )
+    This function corresponds to the TIFFReadRGBAImageOriented function in the
+    libtiff library.
+
+    Parameters
+    ----------
+    fp : ctypes void pointer
+        File pointer returned by libtiff.
+    width, height : int
+        Width and height of the returned image.
+    orientation : int
+        The raster origin position.
+
+    See Also
+    --------
+    Orientation
     """
     err_handler, warn_handler = _set_error_warning_handlers()
 
@@ -888,7 +901,7 @@ def readRGBAImageOriented(fp, width=None, height=None,
     img = np.zeros((height, width, 4), dtype=np.uint8)
     raster = img.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
     _LIBTIFF.TIFFReadRGBAImageOriented(fp, width, height, raster, orientation,
-                                       stopOnError)
+                                       0)
 
     _reset_error_warning_handlers(err_handler, warn_handler)
 

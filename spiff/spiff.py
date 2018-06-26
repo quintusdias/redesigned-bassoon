@@ -63,23 +63,6 @@ class TIFF(object):
     """
     tagnum2name = tags.tagnum2name
 
-    # Map the enumerated TIFF datatypes to python.
-    datatype2fmt = {
-        1: ('B', 1),
-        2: ('B', 1),
-        3: ('H', 2),
-        4: ('I', 4),
-        5: ('II', 8),
-        7: ('B', 1),
-        9: ('i', 4),
-        10: ('ii', 8),
-        11: ('f', 4),
-        12: ('d', 8),
-        13: ('I', 4),
-        16: ('Q', 8),
-        18: ('Q', 8)
-    }
-
     def __init__(self, path, mode='r'):
         """
         Parameters
@@ -107,6 +90,23 @@ class TIFF(object):
             self.parse_ifd()
 
         self._ifd_offsets = []
+
+        # Map the enumerated TIFF datatypes to python.
+        self.datatype2fmt = {
+            1: ('B', 1),
+            2: ('B', 1),
+            3: ('H', 2),
+            4: ('I', 4),
+            5: ('II', 8),
+            7: ('B', 1),
+            9: ('i', 4),
+            10: ('ii', 8),
+            11: ('f', 4),
+            12: ('d', 8),
+            13: ('I', 4),
+            16: ('Q', 8),
+            18: ('Q', 8)
+        }
 
     def __iter__(self):
         """
