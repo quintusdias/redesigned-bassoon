@@ -310,19 +310,6 @@ class JPEGProc(IntEnum):
     LOSSLESS = 14
 
 
-class OSubFileType(IntEnum):
-    """
-    A general indication of the kind of data contained in this subfile.
-
-    .. deprecated:: 0.1.0
-        This class is deprecated. The NewSubfileType field should be used
-        instead.
-    """
-    IMAGE = 1
-    REDUCEDIMAGE = 2
-    PAGE = 3
-
-
 class PlanarConfig(IntEnum):
     """
     How the components of each pixel are stored.
@@ -422,15 +409,6 @@ class THRESHHOLDING(IntEnum):
     BILEVEL = 1
     HALFTONE = 2
     ERRORDIFFUSE = 3
-
-
-class T4Options(IntEnum):
-    """
-    Options for Group 3 Fax compression.
-    """
-    TWOD_ENCODING = 1
-    UNCOMPRESSED = 2
-    FILLBITS = 4
 
 
 class YCbCrPosition(IntEnum):

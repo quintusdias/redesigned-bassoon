@@ -3,6 +3,7 @@ import datetime as dt
 import io
 import pathlib
 import pprint
+import re
 import struct
 
 # 3rd party libraries
@@ -72,6 +73,22 @@ class TIFF(object):
         mode : str
             File access mode.
         """
+        # Map the enumerated TIFF datatypes to python.
+        self.datatype2fmt = {
+            1: ('B', 1),
+            2: ('B', 1),
+            3: ('H', 2),
+            4: ('I', 4),
+            5: ('II', 8),
+            7: ('B', 1),
+            9: ('i', 4),
+            10: ('ii', 8),
+            11: ('f', 4),
+            12: ('d', 8),
+            13: ('I', 4),
+            16: ('Q', 8),
+            18: ('Q', 8)
+        }
 
         if isinstance(path, str):
             self.path = pathlib.Path(path)
@@ -90,23 +107,6 @@ class TIFF(object):
             self.parse_ifd()
 
         self._ifd_offsets = []
-
-        # Map the enumerated TIFF datatypes to python.
-        self.datatype2fmt = {
-            1: ('B', 1),
-            2: ('B', 1),
-            3: ('H', 2),
-            4: ('I', 4),
-            5: ('II', 8),
-            7: ('B', 1),
-            9: ('i', 4),
-            10: ('ii', 8),
-            11: ('f', 4),
-            12: ('d', 8),
-            13: ('I', 4),
-            16: ('Q', 8),
-            18: ('Q', 8)
-        }
 
     def __iter__(self):
         """
@@ -159,6 +159,17 @@ class TIFF(object):
         """
         b = _cytiff.print_directory(self.tfp)
         s = b.decode('utf-8', 'ignore')
+
+        # We have to post-process a bit to get rid of random characters that
+        # randomly get added onto the end (or possibly not).  The pattern
+        # seems to be that any line starting with anything other than "TIFF"
+        # or two spaces should be ignored.
+        # lines = [
+        #     line for line in s.splitlines() if re.match('(TIFF|\s{2})', line)]
+        # s = '\n'.join(lines)
+
+        # Strip off trailing whitespace, but always add exactly one newline.
+        s = s.rstrip() + '\n'
         return s
 
     def __del__(self):
