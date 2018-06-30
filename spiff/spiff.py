@@ -191,6 +191,21 @@ class TIFF(object):
         self._rgba = value
 
     @property
+    def shape(self):
+        if self.spp == 1:
+            # It is a 2D image.
+            try:
+                return (self.h, self.w)
+            except KeyError:
+                # We can assume that ImageLength and ImageWidth are not yet
+                # defined.  shape is meaningless at this point.
+                msg = "Either ImageLength or ImageWidth is not yet defined."
+                raise RuntimeError(msg)
+        else:
+            # 3D image.
+            return (self.h, self.w, self.spp)
+
+    @property
     def h(self):
         """
         Shortcut for the image height.
@@ -250,7 +265,12 @@ class TIFF(object):
         """
         Shortcut for the image depth
         """
-        return self['SamplesPerPixel']
+        try:
+            return self['SamplesPerPixel']
+        except KeyError:
+            # It's possible that SamplesPerPixel isn't defined yet, or maybe
+            # is not even written to the file.  Try to get the defaulted value.
+            return lib.getFieldDefaulted(self.tfp, 'SamplesPerPixel')
 
     def new_image(self):
         """

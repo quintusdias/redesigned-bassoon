@@ -46,12 +46,33 @@ class TestSuite(unittest.TestCase):
         self.assertNotEqual(first_offset, exif_offset)
         self.assertEqual(first_offset, third_offset)
 
+    def test_shape_2D(self):
+        """
+        Scenario: Access the shape property for a 2D image.
+
+        Expected Result:  The two-tuple should match what is shown by TIFFINFO.
+        """
+        path = self._get_path('tiger-minisblack-float-strip-32.tif')
+        t = TIFF(path)
+        self.assertEqual(t.shape, (76, 73))
+
+    def test_shape_3D(self):
+        """
+        Scenario: Access the shape property for a 3D image.
+
+        Expected Result:  The three-tuple should match what is shown by
+        TIFFINFO.
+        """
+        path = self._get_path('zackthecat.tif')
+        t = TIFF(path)
+        self.assertEqual(t.shape, (213, 234, 3))
+
     def test_rgba_refused_on_bad_candidate(self):
         """
         Scenario: Attempt to read a float32 image using the RGBA interface.
 
-        Expected Result:  We should error out since floating point images are
-        not covered by the RGBA man page.
+        Expected Result:  The two-tuple should correspond to what TIFFINFO
+        shows.
         """
         path = self._get_path('tiger-minisblack-float-strip-32.tif')
         t = TIFF(path)

@@ -238,7 +238,52 @@ class TestSuite(unittest.TestCase):
 
                 np.testing.assert_array_equal(actual, expected)
 
-    def test_error(self):
+    def test_access_shape_before_ready(self):
+        """
+        Scenario: Access the shape property before it is known.
+
+        Expected Result:  RuntimeErrors
+        """
+        expected = skimage.data.astronaut()
+        with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+            t = TIFF(tfile.name, 'w')
+            t['Photometric'] = lib.Photometric.RGB
+
+            with self.assertRaises(RuntimeError):
+                t.shape
+
+            w, h, nz = expected.shape
+            t['ImageWidth'] = w
+
+            with self.assertRaises(RuntimeError):
+                # Still not ready yet.
+                t.shape
+
+            t['ImageLength'] = h
+
+            # At this point, shape might be viable.  It might also be wrong
+            # since we don't know spp yet.
+            self.assertEqual(t.shape, (h, w))
+
+            t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+            t['Compression'] = lib.Compression.NONE
+            t['BitsPerSample'] = 8
+            t['SamplesPerPixel'] = 3
+
+            # And now that we do know spp, we change our minds.
+            self.assertEqual(t.shape, (h, w, 3))
+
+            rps = int(h / 2)
+            t['RowsPerStrip'] = rps
+
+            t[:] = expected
+
+            del t
+
+            t = TIFF(tfile.name, mode='r')
+            self.assertEqual(t.shape, (h, w, 3))
+
+    def test_write_to_read_only(self):
         """
         Scenario: Write to an image that has been opened read-only.
 
