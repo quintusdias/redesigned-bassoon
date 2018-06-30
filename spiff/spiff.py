@@ -15,6 +15,14 @@ from . import tags
 from . import _cytiff
 
 
+class DatatypeMismatchError(RuntimeError):
+    """
+    Raise this exception if an attempt is made to write YCbCr/JPEG images with
+    image data that is not uint8.
+    """
+    pass
+
+
 class JPEGColorModeRawError(RuntimeError):
     """
     Raise this exception if an attempt is made to write YCbCr/JPEG images with
@@ -362,6 +370,33 @@ class TIFF(object):
 
                 lib.writeEncodedTile(self.tfp, tilenum, tile, size=tile.nbytes)
 
+    def _write_image(self, idx, image):
+        if (((self['Photometric'] == lib.Photometric.YCBCR) and
+             (self['Compression'] == lib.Compression.JPEG))):
+
+            # JPEG has some restrictions.
+            if self['JPEGColorMode'] == lib.JPEGColorMode.RAW:
+                msg = (
+                    "You must set the JPEGColorMode tag to "
+                    "JPEGColorMode.RGB in order to write to a YCbCr/JPEG "
+                    "image."
+                )
+                raise JPEGColorModeRawError(msg)
+
+            if image.dtype != np.uint8:
+                msg = (
+                    f"Writing JPEG images with datatype {image.dtype} are not "
+                    f"supported.  They must be uint8."
+                )
+                raise DatatypeMismatchError(msg)
+
+        if idx.start is None and idx.step is None and idx.stop is None:
+            # Case of t[:] = ...
+            if lib.isTiled(self.tfp):
+                self._writeTiledImage(image)
+            else:
+                self._writeStrippedImage(image)
+
     def __setitem__(self, idx, value):
         """
         Set a tag value or write part/all of an image.
@@ -375,22 +410,7 @@ class TIFF(object):
             self.tags[idx] = value
 
         elif isinstance(idx, slice):
-            if (((self['Photometric'] == lib.Photometric.YCBCR) and
-                 (self['Compression'] == lib.Compression.JPEG) and
-                 (self['JPEGColorMode'] == lib.JPEGColorMode.RAW))):
-                msg = (
-                    "You must set the JPEGColorMode tag to "
-                    "JPEGColorMode.RGB in order to write to a YCbCr/JPEG "
-                    "image."
-                )
-                raise JPEGColorModeRawError(msg)
-
-            if idx.start is None and idx.step is None and idx.stop is None:
-                # Case of t[:] = ...
-                if lib.isTiled(self.tfp):
-                    self._writeTiledImage(value)
-                else:
-                    self._writeStrippedImage(value)
+            self._write_image(idx, value)
         else:
             msg = f"Unhandled:  {idx}"
             raise RuntimeError(msg)

@@ -13,7 +13,7 @@ import skimage.data
 import skimage.measure
 
 # Local imports
-from spiff.spiff import TIFF, JPEGColorModeRawError
+from spiff.spiff import TIFF, JPEGColorModeRawError, DatatypeMismatchError
 from spiff.lib import LibTIFFError
 from spiff import lib
 
@@ -266,6 +266,35 @@ class TestSuite(unittest.TestCase):
 
             t = TIFF(tfile.name, mode='r')
             with self.assertRaises(LibTIFFError):
+                t[:] = expected
+
+    def test_ycbcr_jpeg_with_bad_datatype(self):
+        """
+        Scenario: Write floating point data as YCbCr/JPEG.
+
+        Expected Result:  RuntimeError
+        """
+        expected = skimage.data.coffee().astype(np.float64)
+
+        with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+            t = TIFF(tfile.name, mode='w')
+            t['Photometric'] = lib.Photometric.YCBCR
+            t['Compression'] = lib.Compression.JPEG
+            t['JPEGColorMode'] = lib.JPEGColorMode.RGB
+            t['JPEGQuality'] = 75
+            t['YCbCrSubsampling'] = (1, 1)
+
+            w, h, nz = expected.shape
+            t['ImageWidth'] = expected.shape[1]
+            t['ImageLength'] = expected.shape[0]
+            t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+            t['BitsPerSample'] = 8
+            t['SamplesPerPixel'] = 3
+
+            t['TileLength'] = 64
+            t['TileWidth'] = 64
+
+            with self.assertRaises(DatatypeMismatchError):
                 t[:] = expected
 
     def test_write_read_ycbcr_jpeg_rgb(self):
@@ -639,7 +668,7 @@ class TestSuite(unittest.TestCase):
         tags = {
             'Photometric': lib.Photometric.RGB,
             'ImageWidth': w,
-            'ImageLength': w,
+            'ImageLength': h,
             'PlanarConfig': lib.PlanarConfig.CONTIG,
             'BitsPerSample': 8,
             'SamplesPerPixel': 3,
