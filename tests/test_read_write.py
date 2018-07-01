@@ -283,6 +283,18 @@ class TestSuite(unittest.TestCase):
             t = TIFF(tfile.name, mode='r')
             self.assertEqual(t.shape, (h, w, 3))
 
+    def test_write_planar_configuration_separate(self):
+        """
+        Scenario: Define a TIFF with planar configuration of separate.
+
+        Expected Result:  A NotImplementedError is raised.
+        """
+        with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+            t = TIFF(tfile.name, 'w')
+            t['Photometric'] = lib.Photometric.RGB
+            with self.assertRaises(NotImplementedError):
+                t['PlanarConfig'] = lib.PlanarConfig.SEPARATE
+
     def test_write_to_read_only(self):
         """
         Scenario: Write to an image that has been opened read-only.

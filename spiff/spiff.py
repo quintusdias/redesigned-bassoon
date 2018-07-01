@@ -361,7 +361,7 @@ class TIFF(object):
                 tilecol += 1
 
                 cslice = slice(col, col + self.tw)
-                tilenum = lib.computeTile(self.tfp, col, row, 0)
+                tilenum = lib.computeTile(self.tfp, col, row, 0, 0)
                 tile = image[rslice, cslice].copy()
 
                 if self.w % self.tw > 0 and tilecol == (numtilecols - 1):
@@ -464,6 +464,52 @@ class TIFF(object):
         """
         Read entire image where the orientation is stripped.
         """
+        if self['PlanarConfig'] == lib.PlanarConfig.CONTIG:
+            return self._readStrippedContigImage(idx)
+        else:
+            return self._readStrippedSeparateImage(idx)
+
+    def _readStrippedSeparateImage(self, idx):
+        """
+        Read entire image where the orientation is stripped and the planar
+        configuration is separate.
+        """
+        numstrips = lib.numberOfStrips(self.tfp)
+        strips_per_plane = numstrips // self.spp
+
+        shape = self.h, self.w, self.spp
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        stripshape = (self.rps, self.w)
+
+        for row in range(0, self.h, self.rps):
+            rslice = slice(row, row + self.rps)
+
+            for plane in range(0, self.spp):
+
+                stripnum = lib.computeStrip(self.tfp, row, plane)
+                strip = np.zeros(stripshape, dtype=dtype)
+                lib.readEncodedStrip(self.tfp, stripnum, strip)
+
+                # Are these strips on the bottom?  Are they full strips?
+                # If not, then we need to shave off some rows.
+                if (stripnum + 1) % strips_per_plane == 0:
+                    if self.h % self.rps > 0:
+                        strip = strip[:self.h % self.rps, :]
+
+                image[rslice, :, plane] = strip
+
+        if self['SamplesPerPixel'] == 1:
+            # squash the trailing dimension of 1.
+            image = np.squeeze(image)
+
+        return image
+
+    def _readStrippedContigImage(self, idx):
+        """
+        Read entire image where the orientation is stripped.
+        """
         numstrips = lib.numberOfStrips(self.tfp)
 
         shape = self.h, self.w, self.spp
@@ -497,6 +543,59 @@ class TIFF(object):
         """
         Helper routine for assembling an entire image out of tiles.
         """
+        if self['PlanarConfig'] == lib.PlanarConfig.CONTIG:
+            return self._readTiledContigImage(idx)
+        else:
+            return self._readTiledSeparateImage(idx)
+
+    def _readTiledSeparateImage(self, idx):
+        """
+        Helper routine for assembling an entire image out of tiles.
+        """
+        numtilerows = int(round(self.h / self.th + 0.5))
+        numtilecols = int(round(self.w / self.tw + 0.5))
+
+        dtype = self._determine_datatype()
+        shape = (self.h, self.w, self.spp)
+        image = np.zeros(shape, dtype=dtype)
+
+        tileshape = (self.th, self.tw)
+
+        # Do the tile dimensions partition the image?  If not, then we will
+        # need to chop up tiles read on the right hand side and on the bottom.
+        partitioned = (self.h % self.th) == 0 and (self.w % self.th) == 0
+
+        for row in range(0, self.h, self.th):
+            rslice = slice(row, row + self.th)
+            for col in range(0, self.w, self.tw):
+                cslice = slice(col, col + self.tw)
+                for plane in range(0, self.spp):
+                    tilenum = lib.computeTile(self.tfp, col, row, 0, plane)
+
+                    tile = np.zeros(tileshape, dtype=dtype)
+                    lib.readEncodedTile(self.tfp, tilenum, tile)
+
+                    if not partitioned and col // self.tw == numtilecols - 1:
+                        # OK, we are on the right hand side.  Need to shave off
+                        # some columns.
+                        tile = tile[:, :(self.w - col)]
+                    if not partitioned and row // self.th == numtilerows - 1:
+                        # OK, we are on the bottom.  Need to shave off some
+                        # rows.
+                        tile = tile[:(self.h - row), :]
+
+                    image[rslice, cslice, plane] = tile
+
+        if self['SamplesPerPixel'] == 1:
+            # squash the trailing dimension of 1.
+            image = np.squeeze(image)
+
+        return image
+
+    def _readTiledContigImage(self, idx):
+        """
+        Helper routine for assembling an entire image out of tiles.
+        """
         numtilerows = int(round(self.h / self.th + 0.5))
         numtilecols = int(round(self.w / self.tw + 0.5))
 
@@ -513,7 +612,7 @@ class TIFF(object):
         for row in range(0, self.h, self.th):
             rslice = slice(row, row + self.th)
             for col in range(0, self.w, self.tw):
-                tilenum = lib.computeTile(self.tfp, col, row, 0)
+                tilenum = lib.computeTile(self.tfp, col, row, 0, 0)
                 cslice = slice(col, col + self.tw)
 
                 tile = np.zeros(tileshape, dtype=dtype)
@@ -559,9 +658,9 @@ class TIFF(object):
             if idx == 'JPEGColorMode':
                 # This is a pseudo-tag that the user might not have set.
                 item = lib.getFieldDefaulted(self.tfp, 'JPEGColorMode')
-            elif idx == 'SampleFormat':
-                # This is a tag that the user might not have set.
-                item = lib.getFieldDefaulted(self.tfp, 'SampleFormat')
+            elif idx in ['PlanarConfig', 'SampleFormat']:
+                # These are tags that the user might not have set.
+                item = lib.getFieldDefaulted(self.tfp, idx)
             else:
                 item = self.tags[idx]
 

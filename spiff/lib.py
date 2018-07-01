@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 
 # Local imports
-from . import config
+from . import config, lib
 from .tags import TAGS
 
 _LIBTIFF, _LIBC = config.load_libraries('tiff', 'c')
@@ -438,7 +438,13 @@ def setField(fp, tag, value):
     _LIBTIFF.TIFFSetField.argtypes = ARGTYPES
     _LIBTIFF.TIFFSetField.restype = check_error
 
-    if tag_num == 330:
+    if tag_num == 284 and value == lib.PlanarConfig.SEPARATE:
+        msg = (
+            "Writing images with planar configuration SEPARATE is not "
+            "supported."
+        )
+        raise NotImplementedError(msg)
+    elif tag_num == 330:
         # SubIFDs:  the array value should just be zeros.  No need for the
         # user to pass anything but the count.
         n = value
@@ -503,17 +509,17 @@ def computeStrip(fp, row, sample):
     return stripnum
 
 
-def computeTile(fp, x, y, sample):
+def computeTile(fp, x, y, z, sample):
     """
     Corresponds to TIFFComputeTile
     """
     err_handler, warn_handler = _set_error_warning_handlers()
 
     ARGTYPES = [ctypes.c_void_p, ctypes.c_uint32, ctypes.c_uint32,
-                ctypes.c_uint16]
+                ctypes.c_uint32, ctypes.c_uint16]
     _LIBTIFF.TIFFComputeTile.argtypes = ARGTYPES
     _LIBTIFF.TIFFComputeTile.restype = ctypes.c_uint32
-    tilenum = _LIBTIFF.TIFFComputeTile(fp, x, y, sample)
+    tilenum = _LIBTIFF.TIFFComputeTile(fp, x, y, z, sample)
 
     _reset_error_warning_handlers(err_handler, warn_handler)
 

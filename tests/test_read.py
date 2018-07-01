@@ -24,6 +24,36 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
+    def test_separated_tiled(self):
+        """
+        Scenario:  Read a tiled RGB TIFF with separate image planes.
+
+        Expected Result:  The assembled image should match the result produced
+        by the RGBA interface.
+        """
+        path = self._get_path('tiger-rgb-tile16-planar-08.tif')
+        t = TIFF(path)
+        img1 = t[:]
+
+        t.rgba = True
+        img2 = t[:][:, :, :3]
+        np.testing.assert_array_equal(img1, img2)
+
+    def test_separated_stripped(self):
+        """
+        Scenario:  Read a stripped RGB TIFF with separate image planes.
+
+        Expected Result:  The assembled image should match the result produced
+        by the RGBA interface.
+        """
+        path = self._get_path('tiger-rgb-strip3-planar-08.tif')
+        t = TIFF(path)
+        img1 = t[:]
+
+        t.rgba = True
+        img2 = t[:][:, :, :3]
+        np.testing.assert_array_equal(img1, img2)
+
     def test_move_to_exif_then_back(self):
         """
         Scenario: Read an EXIF subdirectory, then move back into the main
