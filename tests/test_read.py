@@ -31,7 +31,7 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tile16-planar-08.tif')
+        path = self._get_path('tiger-rgb-tiled16-contig-08.tif')
         t = TIFF(path)
         img1 = t[:]
 

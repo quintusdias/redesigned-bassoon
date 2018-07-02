@@ -206,6 +206,13 @@ class TIFF(object):
             return (self.h, self.w, self.spp)
 
     @property
+    def pc(self):
+        """
+        Shortcut for the planar configuration.
+        """
+        return self['PlanarConfig']
+
+    @property
     def h(self):
         """
         Shortcut for the image height.
@@ -639,20 +646,36 @@ class TIFF(object):
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
+            # Read the whole image?
             if not (('TileByteCounts' in self.tags.keys()) or
                     ('StripByteCounts' in self.tags.keys())):
                 raise TIFFReadImageError('This IFD does not have an image')
             elif self.rgba:
                 item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
             elif self['Compression'] == lib.Compression.OJPEG:
+                # Force the issue with OJPEG.  This is the only case where we
+                # just use RGBA mode without letting the user think about that.
                 if idx.start is None and idx.stop is None and idx.step is None:
                     # case is [:]
                     item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
                     item = item[:, :, :3]
             elif lib.isTiled(self.tfp):
-                item = self._readTiledImage(slice)
+                item = self._readTiledImage(idx)
             else:
-                item = self._readStrippedImage(slice)
+                item = self._readStrippedImage(idx)
+
+        elif isinstance(idx, tuple):
+            # Partial read?
+            rowslice = idx[0]
+            colslice = idx[1]
+            try:
+                zslice = idx[2]
+            except IndexError:
+                zslice = None
+            if lib.isTiled(self.tfp):
+                item = self._readPartialTiled(rowslice, colslice, zslice)
+            else:
+                item = self._readPartialStripped(rowslice, colslice, zslice)
 
         elif isinstance(idx, str):
             if idx == 'JPEGColorMode':
@@ -665,6 +688,333 @@ class TIFF(object):
                 item = self.tags[idx]
 
         return item
+
+    def _readPartialStripped(self, rowslice, colslice, zslice):
+        """
+        Read a partial stripped image according to the slice information.
+        """
+        # Determine the upper left pixel of the starting strip.
+        if rowslice.start is None:
+            ul_sy = 0
+            rowslice = slice(0, rowslice.stop, rowslice.step)
+        else:
+            ul_sy = (rowslice.start // self.rps) * self.rps
+
+        if colslice.start is None:
+            colslice = slice(0, colslice.stop, colslice.step)
+
+        ul_stripnum = lib.computeStrip(self.tfp, ul_sy, 0)
+
+        # Determine the upper left pixel of the leftmost tile in the starting
+        # tile column.  The wording is funny, we'll refer to it as lower left
+        # row and column.
+        if rowslice.stop is None:
+            # Go to the end.
+            ll_sy = self.h - self.rps + 1
+        else:
+            ll_sy = min(self.h, rowslice.stop)
+        # Make it at least one strip down.
+        ll_sy = max(ll_sy, ul_sy + self.rps)
+
+        # Are the requested extents bigger than the image?  If so, roll them
+        # back.
+        if rowslice.stop > self.h:
+            rowslice = slice(rowslice.start, self.h, rowslice.step)
+        if colslice.stop > self.w:
+            colslice = slice(colslice.start, self.w, colslice.step)
+
+        # Initialize the returned image
+        numrows = rowslice.stop - rowslice.start
+        numcols = colslice.stop - colslice.start
+        shape = (numrows, numcols, self.spp)
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        # Initialize the tile.
+        if self.pc == lib.PlanarConfig.SEPARATE:
+            strip = np.zeros((self.rps, self.w, 1), dtype=dtype)
+        else:
+            strip = np.zeros((self.rps, self.w, self.spp), dtype=dtype)
+
+        # Compute some strip extents.
+        ul_stripnum = lib.computeStrip(self.tfp, ul_sy, 0)
+        ll_stripnum = lib.computeStrip(self.tfp, rowslice.stop, 0)
+
+        for row in range(ul_sy, ll_sy, self.rps):
+
+            # Determine the source row slice for this strip
+            if row == ul_sy:
+                # First tile row.
+                sy1 = rowslice.start % self.rps
+
+                # Is the end extent inside that first tile?  If so, then
+                # the end extent sx2 is computed the same as sx1.
+                if ul_stripnum == ll_stripnum:
+                    sy2 = rowslice.stop % self.rps
+                else:
+                    sy2 = self.rps
+
+            elif (ll_sy - row) < self.rps:
+                # Last tile row.
+                sy1 = 0
+                sy2 = rowslice.stop % self.rps
+            else:
+                # Interior tile row.
+                sy1 = 0
+                sy2 = self.rps
+            syslice = slice(sy1, sy2)
+
+            # Determine the destination row slice for this tile row.
+            if row == ul_sy:
+                # First strip
+                dy1 = 0
+                dy2 = sy2 - sy1
+            elif (ll_sy - row) < self.rps:
+                # Last strip
+                dy1 = dy2
+                dy2 = image.shape[0]
+            else:
+                # Interior strip.
+                dy1 = dy2
+                dy2 = dy2 + self.rps
+            dyslice = slice(dy1, dy2)
+
+            if self.pc == lib.PlanarConfig.SEPARATE:
+                for sample in range(0, self.spp):
+                    stripnum = lib.computeStrip(self.tfp, row, sample)
+                    lib.readEncodedStrip(self.tfp, stripnum, strip)
+                    image[dyslice, :, sample] = strip[syslice, colslice].squeeze()  # noqa: E501
+            else:
+                stripnum = lib.computeStrip(self.tfp, row, 0)
+                lib.readEncodedStrip(self.tfp, stripnum, strip)
+                image[dyslice, :, :] = strip[syslice, colslice, :]
+
+        return image
+
+    def _readPartialTiled(self, rowslice, colslice, zslice):
+        """
+        Read a partial tiled separate image according to the slice
+        information.
+        """
+        # Determine the upper left pixel of the starting tile.
+        if rowslice.start is None:
+            ul_ty = 0
+            rowslice = slice(0, rowslice.stop, rowslice.step)
+        else:
+            ul_ty = (rowslice.start // self.th) * self.th
+
+        if colslice.start is None:
+            ul_tx = 0
+            colslice = slice(0, colslice.stop, colslice.step)
+        else:
+            ul_tx = (colslice.start // self.tw) * self.tw
+
+        ul_tilenum = lib.computeTile(self.tfp, ul_tx, ul_ty, 0, 0)
+
+        # Determine the upper left pixel of the rightmost tile in the starting
+        # tile row.  The wording is funny, we'll refer to it as upper right
+        # row and column.
+        ur_ty = ul_ty
+        if colslice.stop is None:
+            # Go to the end.
+            ur_tx = self.w - self.tw + 1
+        else:
+            ur_tx = min(self.w, colslice.stop)
+
+        # Make it at least one tile over.
+        ur_tx = max(ur_tx, ul_tx + self.tw)
+        ur_tilenum = lib.computeTile(self.tfp, ur_tx, ur_ty, 0, 0)
+
+        # Determine the upper left pixel of the leftmost tile in the starting
+        # tile column.  The wording is funny, we'll refer to it as lower left
+        # row and column.
+        if rowslice.stop is None:
+            # Go to the end.
+            ll_ty = self.h - self.th + 1
+        else:
+            ll_ty = min(self.h, rowslice.stop)
+        # Make it at least one tile down.
+        ll_ty = max(ll_ty, ul_ty + self.th)
+
+        # Determine the upper left pixel of the rightmost tile in the ending
+        # tile column.  The wording is funny, we'll refer to it as lower right
+        # row and column.
+        lr_ty = ll_ty
+
+        # Are the requested extents bigger than the image?  If so, roll them
+        # back.
+        if rowslice.stop > self.h:
+            rowslice = slice(rowslice.start, self.h, rowslice.step)
+        if colslice.stop > self.w:
+            colslice = slice(colslice.start, self.w, colslice.step)
+
+        # Initialize the returned image
+        numrows = rowslice.stop - rowslice.start
+        numcols = colslice.stop - colslice.start
+        shape = (numrows, numcols, self.spp)
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        # Initialize the tile.
+        if self.pc == lib.PlanarConfig.SEPARATE:
+            tile = np.zeros((self.th, self.tw, 1), dtype=dtype)
+        else:
+            tile = np.zeros((self.th, self.tw, self.spp), dtype=dtype)
+
+        # Compute some tile extents.
+        ul_tilenum = lib.computeTile(self.tfp, ul_tx, ul_ty, 0, 0)
+        ur_tilenum = lib.computeTile(self.tfp, colslice.stop, ul_ty, 0, 0)
+        ll_tilenum = lib.computeTile(self.tfp, ul_tx, rowslice.stop, 0, 0)
+
+        for tx in range(ul_tx, ur_tx, self.tw):
+
+            # Determine the source column slice for this tile column.
+            if tx == ul_tx:
+                # First tile column.
+                sx1 = colslice.start % self.tw
+
+                # Is the end extent inside that first tile?  If so, then the
+                # end extent sx2 is computed the same as sx1.
+                if ul_tilenum == ur_tilenum:
+                    sx2 = colslice.stop % self.tw
+                else:
+                    sx2 = self.tw
+
+            elif (ur_tx - tx) < self.tw:
+                # Last tile column.
+                sx1 = 0
+                sx2 = colslice.stop % self.tw
+            else:
+                # Interior tile column.
+                sx1 = 0
+                sx2 = self.tw
+            sxslice = slice(sx1, sx2)
+
+            # Determine the destination column slice for this tile column.
+            if tx == ul_tx:
+                # First tile column.
+                dx1 = 0
+                dx2 = sx2 - sx1
+            elif (ur_tx - tx) < self.tw:
+                # Last tile column.
+                dx1 = dx2
+                dx2 = image.shape[1]
+            else:
+                # Interior tile column.
+                dx1 = dx2
+                dx2 = dx2 + self.tw
+            dxslice = slice(dx1, dx2)
+
+            for ty in range(ul_ty, lr_ty, self.th):
+
+                # Determine the source row slice for this tile row.
+                if ty == ul_ty:
+                    # First tile row.
+                    sy1 = rowslice.start % self.th
+
+                    # Is the end extent inside that first tile?  If so, then
+                    # the end extent sx2 is computed the same as sx1.
+                    if ul_tilenum == ll_tilenum:
+                        sy2 = rowslice.stop % self.th
+                    else:
+                        sy2 = self.th
+
+                elif (ll_ty - ty) < self.th:
+                    # Last tile row.
+                    sy1 = 0
+                    sy2 = rowslice.stop % self.th
+                else:
+                    # Interior tile row.
+                    sy1 = 0
+                    sy2 = self.th
+                syslice = slice(sy1, sy2)
+
+                # Determine the destination row slice for this tile row.
+                if ty == ul_ty:
+                    # First tile row.
+                    dy1 = 0
+                    dy2 = sy2 - sy1
+                elif (ll_ty - ty) < self.th:
+                    # Last tile row.
+                    dy1 = dy2
+                    dy2 = image.shape[0]
+                else:
+                    # Interior tile row.
+                    dy1 = dy2
+                    dy2 = dy2 + self.th
+                dyslice = slice(dy1, dy2)
+
+                if self.pc == lib.PlanarConfig.SEPARATE:
+                    for sample in range(0, self.spp):
+                        tilenum = lib.computeTile(self.tfp, tx, ty, 0, sample)
+                        lib.readEncodedTile(self.tfp, tilenum, tile)
+                        image[dyslice, dxslice, sample] = tile[syslice, sxslice].squeeze()  # noqa: E501
+                else:
+                    tilenum = lib.computeTile(self.tfp, tx, ty, 0, 0)
+                    lib.readEncodedTile(self.tfp, tilenum, tile)
+                    image[dyslice, dxslice, :] = tile[syslice, sxslice, :]
+
+        return image
+
+    def _readPartialStrippedContig(self, rowslice, colslice, zslice):
+        """
+        Read a partial stripped planar configuous image according to the slice
+        information.
+        """
+        starting_row = 0 if rowslice.start is None else rowslice.start
+        starting_strip = lib.computeStrip(self.tfp, starting_row, 0)
+
+        if rowslice.stop is None:
+            # Go to the end.
+            ending_row = self.h - self.rps + 1
+        else:
+            ending_row = rowslice.stop
+        ending_strip = lib.computeStrip(self.tfp, ending_row - 1, 0)
+
+        starting_col = 0 if colslice.start is None else colslice.start
+        ending_col = self.w if colslice.stop is None else colslice.stop
+
+        # Initialize the returned image.
+        shape = ending_row - starting_row, ending_col - starting_col, self.spp
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        # Initialize the strip image.  We reuse this each time we read a strip.
+        stripshape = (self.rps, self.w, self.spp)
+        strip = np.zeros(stripshape, dtype=dtype)
+
+        # Assemble the strips.
+        # There are three cases, the first strip, the last strip, and all the
+        # interior strips.
+
+        # 1st strip
+        lib.readEncodedStrip(self.tfp, starting_strip, strip)
+        src_r_slice = slice(starting_row % self.rps,
+                            max(self.rps, ending_row % self.rps))
+        dest_r_slice = slice(0, src_r_slice.stop - src_r_slice.start)
+        image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
+
+        # All the interior strips.
+        src_r_slice = slice(0, self.rps)
+        for stripnum in range(starting_strip + 1, ending_strip):
+            lib.readEncodedStrip(self.tfp, stripnum, strip)
+
+            # Extract the partial image from the strip.
+            dest_r_slice = slice(dest_r_slice.stop,
+                                 dest_r_slice.stop + self.rps)
+            image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
+
+        # And do the last strip
+        if ending_strip > starting_strip:
+            lib.readEncodedStrip(self.tfp, ending_strip, strip)
+
+            src_r_slice = slice(0, rowslice.stop % self.rps)
+            dest_r_slice = slice(dest_r_slice.stop,
+                                 dest_r_slice.stop + src_r_slice.stop)
+
+            image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
+
+        return image
 
     def parse_ifd(self):
         """
