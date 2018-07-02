@@ -24,6 +24,23 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
+    def test_read_partial_stripped(self):
+        """
+        Scenario:  Read a stripped TIFF (rps=3) with contiguous planar
+        configuration.  The read operation should be contained in a single
+        strip.
+
+        Expected Result:  The assembled image should match the result produced
+        by the RGBA interface.
+        """
+        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
+        t = TIFF(path)
+        actual = t[:2, :2, :]
+
+        t.rgba = True
+        expected = t[:][:2, :2, :]
+        np.testing.assert_array_equal(actual, expected)
+
     def test_separated_tiled(self):
         """
         Scenario:  Read a tiled RGB TIFF with separate image planes.

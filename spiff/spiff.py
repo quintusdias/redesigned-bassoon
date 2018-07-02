@@ -639,12 +639,15 @@ class TIFF(object):
         Either retrieve a named tag or read part/all of an image.
         """
         if isinstance(idx, slice):
+            # Read the whole image?
             if not (('TileByteCounts' in self.tags.keys()) or
                     ('StripByteCounts' in self.tags.keys())):
                 raise TIFFReadImageError('This IFD does not have an image')
             elif self.rgba:
                 item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
             elif self['Compression'] == lib.Compression.OJPEG:
+                # Force the issue with OJPEG.  This is the only case where we
+                # just use RGBA mode without letting the user think about that.
                 if idx.start is None and idx.stop is None and idx.step is None:
                     # case is [:]
                     item = lib.readRGBAImageOriented(self.tfp, self.w, self.h)
@@ -653,6 +656,19 @@ class TIFF(object):
                 item = self._readTiledImage(slice)
             else:
                 item = self._readStrippedImage(slice)
+
+        elif isinstance(idx, tuple):
+            # Partial read?
+            rowjslice = idx[0]
+            colslice = idx[1]
+            try:
+                zslice = idx[2]
+            except IndexError:
+                zslice = None
+            if lib.isTiled(self.tfp):
+                image = self._readPartialTiled(rowslice, colslice, zslice)
+            else:
+                image = self._readPartialStripped(rowslice, colslice, zslice)
 
         elif isinstance(idx, str):
             if idx == 'JPEGColorMode':
@@ -665,6 +681,58 @@ class TIFF(object):
                 item = self.tags[idx]
 
         return item
+
+    def _readPartialStripped(self, rowslice, colslice, zslice):
+        """
+        Read a partial image according to the slice information.
+        """
+        if row_slice.start is None:
+            starting_row = 0
+        else:
+            # We start assembling at the first row of the first strip, not
+            # at the row the user specified.
+            starting_row = (row_slice.start // self.rps) * self.rps
+
+        if row_slice.stop is None:
+            ending_row = self.h
+        else:
+            # Same with ending row.  Use the first row in the last strip that
+            # we want.
+            ending_row = (row_slice.stop // self.rps) * self.rps
+
+        numstrips = lib.numberOfStrips(self.tfp)
+        num_local_strips = (ending_row - starting_row) // self.rps + 1
+
+        shape = num_local_strips * self.rps, self.w, self.spp
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        stripshape = (self.rps, self.w, self.spp)
+        strip = np.zeros(stripshape, dtype=dtype)
+
+        # Assemble the strips.
+        count = 0
+        for row in range(starting_row, ending_row, self.rps):
+            stripnum = lib.computeStrip(self.tfp, row, 0)
+            lib.readEncodedStrip(self.tfp, stripnum, strip)
+
+            # Figure out how to put the strip into the master image.
+            image_row = row - starting_row
+            rslice_image = slice(image_row, image_row + self.rps)
+            image[rslice_image, colslice, :] = strip[:, colslice, :]
+
+        # Is it the last strip?  Is that last strip a full strip?
+        # If not, then we need to shave off some rows.
+        if stripnum == (numstrips - 1):
+            if self.h % self.rps > 0:
+                strip = strip[:self.h % self.rps, :]
+
+        if self['SamplesPerPixel'] == 1:
+            # squash the trailing dimension of 1.
+            image = np.squeeze(image)
+
+        return image
+
 
     def parse_ifd(self):
         """
