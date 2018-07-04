@@ -18,9 +18,9 @@ class TestSuite(unittest.TestCase):
         directory = pathlib.Path(__file__).parent
         return directory / 'data' / filename
 
-    def test_read_partial_stripped(self):
+    def test_read_partial_stripped_contained_in_one_strip(self):
         """
-        Scenario:  Read a stripped TIFF (rps=3) with contiguous planar
+        Scenario:  Read a stripped TIFF (rps=16) with contiguous planar
         configuration.  The read operation should be contained in a single
         strip.  In this case, it is strip #1.
 
@@ -33,4 +33,21 @@ class TestSuite(unittest.TestCase):
 
         t.rgba = True
         expected = t[:][30:32, 30:32, 0:3]
+        np.testing.assert_array_equal(actual, expected)
+
+    def test_read_partial_stripped_crosses_two_strips(self):
+        """
+        Scenario:  Read a stripped TIFF (rps=16) with contiguous planar
+        configuration.  The read operation should be contained in a single
+        strip.  In this case, it is strip #1 and #2.
+
+        Expected Result:  The assembled image should match the result produced
+        by the RGBA interface.
+        """
+        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
+        t = TIFF(path)
+        actual = t[31:33, 31:33, :]
+
+        t.rgba = True
+        expected = t[:][31:33, 31:33, 0:3]
         np.testing.assert_array_equal(actual, expected)

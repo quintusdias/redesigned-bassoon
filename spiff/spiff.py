@@ -690,12 +690,14 @@ class TIFF(object):
             starting_row = 0
         else:
             starting_row = rowslice.start
+        starting_strip = lib.computeStrip(self.tfp, starting_row, 0)
 
         if rowslice.stop is None:
             # Go to the end.
             ending_row = self.h - self.rps + 1
         else:
             ending_row = rowslice.stop
+        ending_strip = lib.computeStrip(self.tfp, ending_row - 1, 0)
 
         shape = (
             ending_row - starting_row,
@@ -712,13 +714,28 @@ class TIFF(object):
         # There are three cases, the first strip, the last strip, and all the
         # interior strips.
 
-        for row in range(starting_row, ending_row, self.rps):
-            stripnum = lib.computeStrip(self.tfp, starting_row, 0)
+        # 1st strip
+        lib.readEncodedStrip(self.tfp, starting_strip, strip)
+        src_r_slice = slice(starting_row % self.rps,
+                            max(self.rps, ending_row % self.rps))
+        dest_r_slice = slice(0, src_r_slice.stop - src_r_slice.start)
+        image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
+
+        # last strip
+        if ending_strip > starting_strip:
+            lib.readEncodedStrip(self.tfp, ending_strip, strip)
+            src_r_slice = slice(0, ending_row % self.rps)
+            dest_r_slice = slice(1, 2)
+            image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
+
+        row = starting_row
+        for stripnum in range(starting_strip + 1, ending_strip):
             lib.readEncodedStrip(self.tfp, stripnum, strip)
             src_r_slice = slice(starting_row % self.rps,
                                 max(self.rps, ending_row % self.rps))
-            dest_r_slice = slice(0, src_r_slice.stop - src_r_slice.start)
             image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
+
+            row += self.rps
 
         # Is it the last strip?  Is that last strip a full strip?
         # If not, then we need to shave off some rows.
