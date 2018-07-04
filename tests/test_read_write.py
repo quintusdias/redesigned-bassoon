@@ -16,6 +16,7 @@ import skimage.measure
 from spiff.spiff import TIFF, JPEGColorModeRawError, DatatypeMismatchError
 from spiff.lib import LibTIFFError
 from spiff import lib
+from .fixtures import AVAILABLE_COMPRESSIONS
 
 
 @unittest.skipIf(platform.system() == 'Windows', "tempfile issue on Windows")
@@ -840,15 +841,12 @@ class TestSuite(unittest.TestCase):
         expected = skimage.data.astronaut()
 
         photometrics = (lib.Photometric.RGB,)
-        Compressions = (lib.Compression.NONE, lib.Compression.LZW,
-                        lib.Compression.PACKBITS, lib.Compression.DEFLATE,
-                        lib.Compression.ADOBE_DEFLATE, lib.Compression.LZMA)
         planars = (lib.PlanarConfig.CONTIG,)
         tiled = (True, False)
         modes = ('w', 'w8')
 
         g = itertools.product(
-            photometrics, Compressions, planars, tiled, modes
+            photometrics, AVAILABLE_COMPRESSIONS, planars, tiled, modes
         )
         for photometric, compression, planar_config, tiled, mode in g:
             with self.subTest(photometric=photometric,
@@ -916,13 +914,11 @@ class TestSuite(unittest.TestCase):
         expected = skimage.data.camera()
 
         photometrics = (lib.Photometric.MINISBLACK, lib.Photometric.MINISWHITE)
-        compressions = (lib.Compression.NONE, lib.Compression.LZW,
-                        lib.Compression.PACKBITS, lib.Compression.DEFLATE,
-                        lib.Compression.ADOBE_DEFLATE, lib.Compression.LZMA)
         tiled = (True, False)
         modes = ('w', 'w8')
 
-        g = itertools.product(photometrics, compressions, tiled, modes)
+        g = itertools.product(photometrics, AVAILABLE_COMPRESSIONS,
+                              tiled, modes)
         for photometric, compression, tiled, mode in g:
             with self.subTest(photometric=photometric,
                               compression=compression,

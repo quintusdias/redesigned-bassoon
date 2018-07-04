@@ -1,3 +1,30 @@
+# Standard library imports
+import tempfile
+
+# Local imports
+import spiff
+
+# Is libtiff build with support for LZMA?
+with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+    t = spiff.TIFF(tfile.name, 'w')
+    t['Photometric'] = spiff.lib.Photometric.RGB
+    try:
+        t['Compression'] = spiff.lib.Compression.LZMA
+    except spiff.lib.LibTIFFError:
+        LZMA_SUPPORT = True
+    else:
+        LZMA_SUPPORT = False
+
+AVAILABLE_COMPRESSIONS = [
+    spiff.lib.Compression.NONE,
+    spiff.lib.Compression.LZW,
+    spiff.lib.Compression.PACKBITS,
+    spiff.lib.Compression.DEFLATE,
+    spiff.lib.Compression.ADOBE_DEFLATE,
+]
+if LZMA_SUPPORT:
+    AVAILABLE_COMPRESSIONS.append(spiff.lib.Compression.LZMA)
+
 zackthecat_tiffinfo = """TIFF Directory at offset 0x1bac (7084)
   Image Width: 234 Image Length: 213
   Tile Width: 240 Tile Length: 224
