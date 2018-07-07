@@ -721,32 +721,25 @@ class TIFF(object):
         dest_r_slice = slice(0, src_r_slice.stop - src_r_slice.start)
         image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
 
-        # last strip
-        if ending_strip > starting_strip:
-            lib.readEncodedStrip(self.tfp, ending_strip, strip)
-            src_r_slice = slice(0, ending_row % self.rps)
-            dest_r_slice = slice(1, 2)
-            image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
-
-        row = starting_row
+        # All the interior strips.
+        src_r_slice = slice(0, self.rps)
         for stripnum in range(starting_strip + 1, ending_strip):
             lib.readEncodedStrip(self.tfp, stripnum, strip)
-            src_r_slice = slice(starting_row % self.rps,
-                                max(self.rps, ending_row % self.rps))
+
+            # Extract the partial image from the strip.
+            dest_r_slice = slice(dest_r_slice.stop,
+                                 dest_r_slice.stop + self.rps)
             image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
 
-            row += self.rps
+        # And do the last strip
+        if ending_strip > starting_strip:
+            lib.readEncodedStrip(self.tfp, ending_strip, strip)
 
-        # Is it the last strip?  Is that last strip a full strip?
-        # If not, then we need to shave off some rows.
-        # stripnum = lib.computeStrip(self.tfp, ending_row, 0)
-        # if stripnum == (numstrips - 1):
-        #     if self.h % self.rps > 0:
-        #         strip = strip[:self.h % self.rps, :]
+            src_r_slice = slice(0, rowslice.stop % self.rps)
+            dest_r_slice = slice(dest_r_slice.stop,
+                                 dest_r_slice.stop + src_r_slice.stop)
 
-        if self['SamplesPerPixel'] == 1:
-            # squash the trailing dimension of 1.
-            image = np.squeeze(image)
+            image[dest_r_slice, :, :] = strip[src_r_slice, colslice, :]
 
         return image
 
