@@ -686,10 +686,7 @@ class TIFF(object):
         """
         Read a partial image according to the slice information.
         """
-        if rowslice.start is None:
-            starting_row = 0
-        else:
-            starting_row = rowslice.start
+        starting_row = 0 if rowslice.start is None else rowslice.start
         starting_strip = lib.computeStrip(self.tfp, starting_row, 0)
 
         if rowslice.stop is None:
@@ -699,14 +696,15 @@ class TIFF(object):
             ending_row = rowslice.stop
         ending_strip = lib.computeStrip(self.tfp, ending_row - 1, 0)
 
-        shape = (
-            ending_row - starting_row,
-            colslice.stop - colslice.start,
-            self.spp
-        )
+        starting_col = 0 if colslice.start is None else colslice.start
+        ending_col = self.w if colslice.stop is None else colslice.stop
+
+        # Initialize the returned image.
+        shape = ending_row - starting_row, ending_col - starting_col, self.spp
         dtype = self._determine_datatype()
         image = np.zeros(shape, dtype=dtype)
 
+        # Initialize the strip image.  We reuse this each time we read a strip.
         stripshape = (self.rps, self.w, self.spp)
         strip = np.zeros(stripshape, dtype=dtype)
 

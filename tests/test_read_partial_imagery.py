@@ -64,3 +64,20 @@ class TestSuite(unittest.TestCase):
         t.rgba = True
         expected = t[:][23:68, 23:68, 0:3]
         np.testing.assert_array_equal(actual, expected)
+
+    def test_read_full_stripped_image_using_indexing(self):
+        """
+        Scenario:  Read a stripped TIFF (rps=16) with contiguous planar
+        configuration.  The indexing given is the same as if the entire image
+        were to be read.
+
+        Expected Result:  The assembled image should match the result produced
+        by the RGBA interface.
+        """
+        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
+        t = TIFF(path)
+        actual = t[:76, :73, :]
+
+        t.rgba = True
+        expected = t[:][:76, :73, :3]
+        np.testing.assert_array_equal(actual, expected)
