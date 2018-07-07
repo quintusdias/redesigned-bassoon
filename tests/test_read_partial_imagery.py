@@ -6,6 +6,7 @@ import unittest
 import numpy as np
 
 # Local imports
+import spiff
 from spiff.spiff import TIFF
 
 
@@ -34,6 +35,18 @@ class TestSuite(unittest.TestCase):
         t.rgba = True
         expected = t[:][30:32, 30:32, 0:3]
         np.testing.assert_array_equal(actual, expected)
+
+    def test_read_given_illegal_ranges(self):
+        """
+        Scenario:  Read a stripped TIFF (rps=16) with contiguous planar
+        configuration, except that the indices are not valid.
+
+        Expected Result:  An exception should be raised.
+        """
+        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
+        t = TIFF(path)
+        with self.assertRaises(spiff.lib.LibTIFFError):
+            t[30:800, 30:32, :]
 
     def test_read_partial_stripped_crosses_multiple_strips(self):
         """
