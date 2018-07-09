@@ -469,6 +469,43 @@ class TIFF(object):
         else:
             return self._readStrippedSeparateImage(idx)
 
+    def _readPartialStrippedSeparateImage(self, rowslice, colslice, zslice):
+        """
+        Read entire image where the orientation is stripped and the planar
+        configuration is separate.
+        """
+        numstrips = lib.numberOfStrips(self.tfp)
+        strips_per_plane = numstrips // self.spp
+
+        shape = self.h, self.w, self.spp
+        dtype = self._determine_datatype()
+        image = np.zeros(shape, dtype=dtype)
+
+        stripshape = (self.rps, self.w)
+        strip = np.zeros(stripshape, dtype=dtype)
+
+        for row in range(0, self.h, self.rps):
+            rslice = slice(row, row + self.rps)
+
+            for plane in range(0, self.spp):
+
+                stripnum = lib.computeStrip(self.tfp, row, plane)
+                lib.readEncodedStrip(self.tfp, stripnum, strip)
+
+                # Are these strips on the bottom?  Are they full strips?
+                # If not, then we need to shave off some rows.
+                if (stripnum + 1) % strips_per_plane == 0:
+                    if self.h % self.rps > 0:
+                        strip = strip[:self.h % self.rps, :]
+
+                image[rslice, :, plane] = strip
+
+        if self['SamplesPerPixel'] == 1:
+            # squash the trailing dimension of 1.
+            image = np.squeeze(image)
+
+        return image
+
     def _readStrippedSeparateImage(self, idx):
         """
         Read entire image where the orientation is stripped and the planar
@@ -482,6 +519,7 @@ class TIFF(object):
         image = np.zeros(shape, dtype=dtype)
 
         stripshape = (self.rps, self.w)
+        strip = np.zeros(stripshape, dtype=dtype)
 
         for row in range(0, self.h, self.rps):
             rslice = slice(row, row + self.rps)
@@ -489,7 +527,6 @@ class TIFF(object):
             for plane in range(0, self.spp):
 
                 stripnum = lib.computeStrip(self.tfp, row, plane)
-                strip = np.zeros(stripshape, dtype=dtype)
                 lib.readEncodedStrip(self.tfp, stripnum, strip)
 
                 # Are these strips on the bottom?  Are they full strips?
@@ -668,7 +705,10 @@ class TIFF(object):
             if lib.isTiled(self.tfp):
                 item = self._readPartialTiled(rowslice, colslice, zslice)
             else:
-                item = self._readPartialStripped(rowslice, colslice, zslice)
+                if self['PlanarConfig'] == lib.PlanarConfig.SEPARATE:
+                    item = self._readPartialStrippedSeparateImage(rowslice, colslice, zslice)
+                else:
+                    item = self._readPartialStrippedContig(rowslice, colslice, zslice)
 
         elif isinstance(idx, str):
             if idx == 'JPEGColorMode':
@@ -682,7 +722,7 @@ class TIFF(object):
 
         return item
 
-    def _readPartialStripped(self, rowslice, colslice, zslice):
+    def _readPartialStrippedContig(self, rowslice, colslice, zslice):
         """
         Read a partial image according to the slice information.
         """
