@@ -432,6 +432,18 @@ class TIFF(object):
         """
         if idx in self.tagnum2name.values():
 
+            try:
+                if (((self['Photometric'] == lib.Photometric.YCBCR) and
+                     (idx == 'Compression') and
+                     (value != lib.Compression.JPEG))):
+                    msg = (
+                        "YCbCr photometric interpretation requires JPEG "
+                        "compression."
+                    )
+                    raise TypeError(msg)
+            except KeyError:
+                pass
+
             # Setting a TIFF tag...
             lib.setField(self.tfp, idx, value)
             self.tags[idx] = value

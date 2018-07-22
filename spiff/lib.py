@@ -444,6 +444,7 @@ def setField(fp, tag, value):
             "supported."
         )
         raise NotImplementedError(msg)
+
     elif tag_num == 330:
         # SubIFDs:  the array value should just be zeros.  No need for the
         # user to pass anything but the count.

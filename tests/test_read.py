@@ -1,5 +1,4 @@
 # Local imports
-import pathlib
 import unittest
 import warnings
 

@@ -277,6 +277,19 @@ class TestSuite(unittest.TestCase):
             t = TIFF(tfile.name, mode='r')
             self.assertEqual(t.shape, (h, w, 3))
 
+    def test_write_ycbr_without_jpeg(self):
+        """
+        Scenario: Define a TIFF with YCbCr photometric configuration without
+        JPEG compression.
+
+        Expected Result:  A NotImplementedError is raised.
+        """
+        with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+            t = TIFF(tfile.name, 'w')
+            t['Photometric'] = lib.Photometric.YCBCR
+            with self.assertRaises(TypeError):
+                t['Compression'] = lib.Compression.NONE
+
     def test_write_planar_configuration_separate(self):
         """
         Scenario: Define a TIFF with planar configuration of separate.

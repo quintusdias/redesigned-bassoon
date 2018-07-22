@@ -1,5 +1,4 @@
 # Standard library imports
-import pathlib
 import unittest
 import warnings
 

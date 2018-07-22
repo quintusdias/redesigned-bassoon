@@ -1,5 +1,4 @@
 # Standard library imports
-import pathlib
 import unittest
 
 try:
@@ -13,7 +12,6 @@ except ImportError:
 import numpy as np
 
 # Local imports
-import spiff
 from spiff.spiff import TIFF
 from . import data
 
