@@ -3,6 +3,13 @@ import pathlib
 import unittest
 import warnings
 
+try:
+    # 3.7+
+    import importlib.resources as ir
+except ImportError:
+    # 3rd party library imports, 3.6 and earlier.
+    import importlib_resources as ir
+
 # Third party library imports
 import numpy as np
 
@@ -13,16 +20,10 @@ from spiff.lib import (
     Compression, Photometric, PlanarConfig, JPEGProc,
     ResolutionUnit, SampleFormat, NotRGBACompatibleError
 )
+from . import data
 
 
 class TestSuite(unittest.TestCase):
-
-    def _get_path(self, filename):
-        """
-        Return full path of a test file.
-        """
-        directory = pathlib.Path(__file__).parent
-        return directory / 'data' / filename
 
     def test_separated_tiled(self):
         """
@@ -31,8 +32,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tiled16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-contig-08.tif') as path:
+            t = TIFF(path)
         img1 = t[:]
 
         t.rgba = True
@@ -46,8 +47,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-strip3-planar-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip3-planar-08.tif') as path:
+            t = TIFF(path)
         img1 = t[:]
 
         t.rgba = True
@@ -62,7 +63,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The offset of the main directory should match after
         moving back from the Exif directory.
         """
-        path = self._get_path('b52a2fceb34f9b31cb417379cf8c02ba.tif')
+        with ir.path(data, 'b52a2fceb34f9b31cb417379cf8c02ba.tif') as path:
+            t = TIFF(path)
         t = TIFF(path)
         first_offset = lib.currentDirOffset(t.tfp)
         with warnings.catch_warnings():
@@ -82,8 +84,8 @@ class TestSuite(unittest.TestCase):
 
         Expected Result:  The two-tuple should match what is shown by TIFFINFO.
         """
-        path = self._get_path('tiger-minisblack-float-strip-32.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-minisblack-float-strip-32.tif') as path:
+            t = TIFF(path)
         self.assertEqual(t.shape, (76, 73))
 
     def test_shape_3D(self):
@@ -93,8 +95,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The three-tuple should match what is shown by
         TIFFINFO.
         """
-        path = self._get_path('zackthecat.tif')
-        t = TIFF(path)
+        with ir.path(data, 'zackthecat.tif') as path:
+            t = TIFF(path)
         self.assertEqual(t.shape, (213, 234, 3))
 
     def test_rgba_refused_on_bad_candidate(self):
@@ -104,8 +106,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The two-tuple should correspond to what TIFFINFO
         shows.
         """
-        path = self._get_path('tiger-minisblack-float-strip-32.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-minisblack-float-strip-32.tif') as path:
+            t = TIFF(path)
         with self.assertRaises(NotRGBACompatibleError):
             t.rgba = True
 
@@ -116,12 +118,12 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The tags match the output of TIFFDUMP.  The first
         three image layers match the RGB version of the image.
         """
-        rgbpath = self._get_path('tiger-rgb-tile-contig-08.tif')
-        t = TIFF(rgbpath)
+        with ir.path(data, 'tiger-rgb-tile-contig-08.tif') as path:
+            t = TIFF(path)
         expected = t[:]
 
-        path = self._get_path('tiger-palette-tile-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-palette-tile-08.tif') as path:
+            t = TIFF(path)
         t.rgba = True
         image = t[:]
 
@@ -154,9 +156,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The tags match the output of TIFFDUMP.  The image
         size matches the tag values.
         """
-        path = self._get_path('zackthecat.tif')
-
-        t = TIFF(path)
+        with ir.path(data, 'zackthecat.tif') as path:
+            t = TIFF(path)
         with self.assertWarns(UserWarning):
             image = t[:]
 

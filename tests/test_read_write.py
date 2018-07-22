@@ -1,4 +1,4 @@
-# Local imports
+# Standard library imports
 import datetime
 import itertools
 import pathlib
@@ -21,13 +21,6 @@ from .fixtures import AVAILABLE_COMPRESSIONS
 
 @unittest.skipIf(platform.system() == 'Windows', "tempfile issue on Windows")
 class TestSuite(unittest.TestCase):
-
-    def _get_path(self, filename):
-        """
-        Return full path of a test file.
-        """
-        directory = pathlib.Path(__file__).parent
-        return directory / 'data' / filename
 
     def _verify_lzw(self, tfile, tiled, mode, predictor, expected):
         photo = lib.Photometric.RGB

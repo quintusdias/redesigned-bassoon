@@ -1,21 +1,21 @@
-# Local imports
+# Standard library imports
 import pathlib
 import unittest
 import warnings
 
+try:
+    # 3.7+
+    import importlib.resources as ir
+except ImportError:
+    # 3rd party library imports, 3.6 and earlier.
+    import importlib_resources as ir
+
 # Local imports
 from spiff.spiff import TIFF, TIFFReadImageError
-from . import fixtures
+from . import fixtures, data
 
 
 class TestSuite(unittest.TestCase):
-
-    def _get_path(self, filename):
-        """
-        Return full path of a test file.
-        """
-        directory = pathlib.Path(__file__).parent
-        return directory / 'data' / filename
 
     def test_repr_main(self):
         """
@@ -23,8 +23,8 @@ class TestSuite(unittest.TestCase):
 
         Expected Result:  Should look same as output of tiffinfo.
         """
-        path = self._get_path('zackthecat.tif')
-        t = TIFF(path)
+        with ir.path(data, 'zackthecat.tif') as path:
+            t = TIFF(path)
         actual = repr(t)
         expected = fixtures.zackthecat_tiffinfo
         self.maxDiff = None
@@ -40,8 +40,8 @@ class TestSuite(unittest.TestCase):
 
         Expected Result:  The results of repr should match that of tiffinfo.
         """
-        path = self._get_path('b52a2fceb34f9b31cb417379cf8c02ba.tif')
-        t = TIFF(path)
+        with ir.path(data, 'b52a2fceb34f9b31cb417379cf8c02ba.tif') as path:
+            t = TIFF(path)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             t.visit_ifd(t['ExifIFD'])
@@ -57,8 +57,8 @@ class TestSuite(unittest.TestCase):
 
         Expected Result:  A TIFFReadImageError should be raised.
         """
-        path = self._get_path('b52a2fceb34f9b31cb417379cf8c02ba.tif')
-        t = TIFF(path)
+        with ir.path(data, 'b52a2fceb34f9b31cb417379cf8c02ba.tif') as path:
+            t = TIFF(path)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
             t.visit_ifd(t['ExifIFD'])

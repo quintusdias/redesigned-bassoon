@@ -1,6 +1,13 @@
-# Local imports
+# Standard library imports
 import pathlib
 import unittest
+
+try:
+    # 3.7+
+    import importlib.resources as ir
+except ImportError:
+    # 3rd party library imports, 3.6 and earlier.
+    import importlib_resources as ir
 
 # Third party library imports
 import numpy as np
@@ -8,16 +15,10 @@ import numpy as np
 # Local imports
 import spiff
 from spiff.spiff import TIFF
+from . import data
 
 
 class TestSuite(unittest.TestCase):
-
-    def _get_path(self, filename):
-        """
-        Return full path of a test file.
-        """
-        directory = pathlib.Path(__file__).parent
-        return directory / 'data' / filename
 
     def test_read_partial_tiled_separate_contained_in_one_tile(self):
         """
@@ -28,8 +29,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tiled16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[30:32, 29:31, :]
 
         t.rgba = True
@@ -45,8 +46,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tiled16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[23:68, 22:63, :]
 
         t.rgba = True
@@ -62,8 +63,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tiled16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[:76, :73, :]
 
         t.rgba = True
@@ -80,8 +81,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The image is returned without error, but rows and
         columns past the image's logical extent are not included.
         """
-        path = self._get_path('tiger-rgb-tiled16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[:78, :75, :]
 
         t.rgba = True
@@ -98,8 +99,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tiled16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[30:32, 29:31, :]
 
         t.rgba = True
@@ -115,8 +116,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tiled16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[23:68, 22:63, :]
 
         t.rgba = True
@@ -132,8 +133,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-tiled16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[:76, :73, :]
 
         t.rgba = True
@@ -150,8 +151,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The image is returned without error, but rows and
         columns past the image's logical extent are not included.
         """
-        path = self._get_path('tiger-rgb-tiled16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-tiled16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[:78, :75, :]
 
         t.rgba = True
@@ -168,8 +169,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[30:32, 30:32, :]
 
         t.rgba = True
@@ -185,8 +186,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[23:68, 23:68, :]
 
         t.rgba = True
@@ -202,8 +203,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[:76, :73, :]
 
         t.rgba = True
@@ -219,8 +220,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The image is returned without error, but rows past
         the last real row are not included.
         """
-        path = self._get_path('tiger-rgb-strip16-contig-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-contig-08.tif') as path:
+            t = TIFF(path)
         actual = t[:78, :73, :]
 
         t.rgba = True
@@ -237,8 +238,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-strip16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[30:32, 29:32, :]
 
         t.rgba = True
@@ -254,8 +255,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-strip16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[23:68, 23:69, :]
 
         t.rgba = True
@@ -271,8 +272,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The assembled image should match the result produced
         by the RGBA interface.
         """
-        path = self._get_path('tiger-rgb-strip16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[:76, :73, :]
 
         t.rgba = True
@@ -288,8 +289,8 @@ class TestSuite(unittest.TestCase):
         Expected Result:  The image is returned without error, but rows past
         the last real row are not included.
         """
-        path = self._get_path('tiger-rgb-strip16-separate-08.tif')
-        t = TIFF(path)
+        with ir.path(data, 'tiger-rgb-strip16-separate-08.tif') as path:
+            t = TIFF(path)
         actual = t[:78, :73, :]
 
         t.rgba = True
