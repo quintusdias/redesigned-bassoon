@@ -42,6 +42,48 @@ If you are familiar with the libtiff's command line utility tiffinfo, you may
 recognize that the spiff.TIFF class has tied its __repr__ method to libtiff's
 TIFFPrintDirectory function.
 
+... create a multi-page TIFF ...
+================================
+
+    >>> import skimage.data                                                        
+    >>> image = skimage.data.astronaut()                                           
+    >>> w, h, nz = image.shape                                                     
+    >>> from spiff import TIFF, lib                                                
+    >>> t = TIFF('astronaut3.tif', mode='w8')                                       
+    >>> # All three images will have the same tags, so set them all
+    >>> # up in advance.    
+    >>> tags = {
+    ...     'Photometric': lib.Photometric.RGB,
+    ...     'ImageWidth': w,
+    ...     'ImageLength': h,
+    ...     'TileWidth': int(w / 2),
+    ...     'TileLength': int(h / 2),
+    ...     'PlanarConfig': lib.PlanarConfig.CONTIG,
+    ...     'BitsPerSample': 8,
+    ...     'SamplesPerPixel': 3,
+    ...     'Compression': lib.Compression.NONE,
+    ... }
+    >>> t = TIFF('astronaut3.tif', mode='w')
+    >>> # Setup the first IFD.
+    >>> for tag, value in tags.keys():
+    ...     t[tag] = value
+    >>> t[:] = image
+    >>> # Finish off the first IFD and signal that there will be
+    >>> # another.
+    >>> t.new_image()
+    >>> # Setup the 2nd IFD. 
+    >>> for tag, value in tags.keys():
+    ...     t[tag] = value
+    >>> t[:] = image
+    >>> # Finish off the second IFD and signal that there will be
+    >>> # another.
+    >>> t.new_image()
+    >>> # Setup the 3rd IFD. 
+    >>> for tag, value in tags.keys():
+    ...     t[tag] = value
+    >>> t[:] = image
+    >>> del t
+
 ... create a BigTIFF...
 ==============================
 Easy.  Just think about how libtiff does it with the TIFFOpen function.
