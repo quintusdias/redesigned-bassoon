@@ -11,7 +11,7 @@ from Cython.Build import cythonize
 if ((('Anaconda' in sys.version) or
      ('Continuum Analytics, Inc.' in sys.version) or
      ('packaged by conda-forge' in sys.version))):
-    # If Anaconda, then openjpeg may have been installed via conda.
+    # If Anaconda, then tiff may have been installed via conda.
     if platform.system() in ['Linux', 'Darwin']:
         root = pathlib.Path(sys.executable).parents[1]
     elif platform.system() == 'Windows':

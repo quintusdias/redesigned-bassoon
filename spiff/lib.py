@@ -9,7 +9,7 @@ import warnings
 import numpy as np
 
 # Local imports
-from . import config, lib
+from . import _config, lib
 from .tags import TAGS
 
 _LIBTIFF, _LIBC = _config.load_libraries('tiff', 'c')

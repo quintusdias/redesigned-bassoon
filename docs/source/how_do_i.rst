@@ -2,12 +2,84 @@
 How do I...?
 ------------
 
+... just create a TIFF, man...
+==============================
+At its simplest, TIFFs are images with usually very specific metadata tags.
+Most of the time, you can use numpy's slicing model to handle the image data
+and python' dictionary model to handle the tags.  For this RGB image, here's
+the minimum you'd have to do to create a tiled TIFF.
+
+    >>> import skimage.data
+    >>> image = skimage.data.astronaut()
+    >>> w, h, nz = image.shape
+    >>> from spiff import TIFF, lib
+    >>> t = TIFF('astronaut3.tif', mode='w')
+    >>> t['Photometric'] = lib.Photometric.RGB
+    >>> t['Compression'] = lib.Compression.LZW
+    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+    >>> t['BitsPerSample'] = 8
+    >>> t['ImageWidth'] = w
+    >>> t['ImageLength'] = h
+    >>> t['SamplesPerPixel'] = 3
+    >>> t['TileWidth'] = int(w/2)
+    >>> t['TileLength'] = int(h/2)
+    >>> t[:] = image
+    >>> t
+    TIFF Directory at offset 0x0 (0)
+      Image Width: 512 Image Length: 512
+      Tile Width: 256 Tile Length: 256
+      Bits/Sample: 8
+      Compression Scheme: LZW
+      Photometric Interpretation: RGB color
+      Samples/Pixel: 3
+      Planar Configuration: single image plane
+    >>> del t
+
+Using [:] means that you don't have to bother writing each individual tile,
+spiff will handle that for you.  
+
+If you are familiar with the libtiff's command line utility tiffinfo, you may
+recognize that the spiff.TIFF class has tied its __repr__ method to libtiff's
+TIFFPrintDirectory function.
+
+... create a BigTIFF...
+==============================
+Easy.  Just think about how libtiff does it with the TIFFOpen function.
+
+    >>> import skimage.data
+    >>> image = skimage.data.astronaut()
+    >>> w, h, nz = image.shape
+    >>> from spiff import TIFF, lib
+    >>> t = TIFF('astronaut3.tif', mode='w8')
+    >>> t['Photometric'] = lib.Photometric.RGB
+    >>> t['Compression'] = lib.Compression.LZW
+    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
+    >>> t['BitsPerSample'] = 8
+    >>> t['ImageWidth'] = w
+    >>> t['ImageLength'] = h
+    >>> t['SamplesPerPixel'] = 3
+    >>> t['TileWidth'] = int(w/2)
+    >>> t['TileLength'] = int(h/2)
+    >>> t[:] = image
+    >>> t
+    TIFF Directory at offset 0x0 (0)
+      Image Width: 512 Image Length: 512
+      Tile Width: 256 Tile Length: 256
+      Bits/Sample: 8
+      Compression Scheme: LZW
+      Photometric Interpretation: RGB color
+      Samples/Pixel: 3
+      Planar Configuration: single image plane
+    >>> del t
+    >>> !file astronaut3.tif
+    astronaut3.tif: Big TIFF image data, little-endian
 
 ... create a TIFF with subIFDs?
 ===============================
-The workflow here is very similar to LibTIFF's C API.  Here, you need only
-supply the number of IFDs you will be writing, then use next_image when you are
-finished with the primary IFD.
+In this case, it helps to be a bit familiar with the workflow for
+libtiff's C API.  Here, though, you need only supply the number of
+IFDs you will be writing, then use visit_ifd when you are finished
+with the primary IFD.
 
     >>> import skimage.data
     >>> image = skimage.data.astronaut()
