@@ -68,7 +68,7 @@ class TestSuite(unittest.TestCase):
         first_offset = lib.currentDirOffset(t.tfp)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            t.visit_ifd(t['ExifIFD'])
+            t.set_subdirectory(t['ExifIFD'])
             exif_offset = lib.currentDirOffset(t.tfp)
 
         t.back()

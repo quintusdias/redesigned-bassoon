@@ -43,7 +43,7 @@ class TestSuite(unittest.TestCase):
             t = TIFF(path)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            t.visit_ifd(t['ExifIFD'])
+            t.set_subdirectory(t['ExifIFD'])
         actual = repr(t)
         expected = fixtures.repr_exif
 
@@ -64,6 +64,6 @@ class TestSuite(unittest.TestCase):
             t = TIFF(path)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            t.visit_ifd(t['ExifIFD'])
+            t.set_subdirectory(t['ExifIFD'])
         with self.assertRaises(TIFFReadImageError):
             t[:]

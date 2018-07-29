@@ -777,7 +777,7 @@ class TestSuite(unittest.TestCase):
                     self.assertEqual(len(t['SubIFDs']), 2)
 
                     # Verify the first subIFD.
-                    t.visit_ifd(t['SubIFDs'][0])
+                    t.set_subdirectory(t['SubIFDs'][0])
                     actual = t[:]
                     np.testing.assert_equal(actual, expected)
                     self.assertEqual(t['ImageDescription'], 'SubIFD #1')
@@ -785,7 +785,7 @@ class TestSuite(unittest.TestCase):
                     t.back()
 
                     # Verify the second subIFD.
-                    t.visit_ifd(t['SubIFDs'][1])
+                    t.set_subdirectory(t['SubIFDs'][1])
                     actual = t[:]
                     np.testing.assert_equal(actual, expected)
                     self.assertEqual(t['ImageDescription'], 'SubIFD #2')

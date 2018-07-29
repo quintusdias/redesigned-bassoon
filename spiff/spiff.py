@@ -298,7 +298,7 @@ class TIFF(object):
         self.fp.seek(old_offset)
         self.parse_ifd()
 
-    def visit_ifd(self, offset):
+    def set_subdirectory(self, offset):
         """
         Change directories and read the contents of a new IFD.
 
