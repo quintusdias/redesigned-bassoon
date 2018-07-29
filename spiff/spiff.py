@@ -279,7 +279,7 @@ class TIFF(object):
             # is not even written to the file.  Try to get the defaulted value.
             return lib.getFieldDefaulted(self.tfp, 'SamplesPerPixel')
 
-    def new_image(self):
+    def write_directory(self):
         """
         Initialize the next image in this multi-page tiff.
         """

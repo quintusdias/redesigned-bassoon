@@ -752,13 +752,13 @@ class TestSuite(unittest.TestCase):
                     t[:] = expected
 
                     # Position to the first subIFD
-                    t.new_image()
+                    t.write_directory()
                     self._set_tags(t, tags, tiled)
                     t['ImageDescription'] = 'SubIFD #1'
                     t[:] = expected
 
                     # Position to the second subIFD
-                    t.new_image()
+                    t.write_directory()
                     self._set_tags(t, tags, tiled)
                     t['ImageDescription'] = 'SubIFD #2'
                     t[:] = expected
@@ -820,11 +820,11 @@ class TestSuite(unittest.TestCase):
                     self._set_tags(t, tags, tiled)
                     t[:] = expected
 
-                    t.new_image()
+                    t.write_directory()
                     self._set_tags(t, tags, tiled)
                     t[:] = expected
 
-                    t.new_image()
+                    t.write_directory()
                     self._set_tags(t, tags, tiled)
                     t[:] = expected
 
