@@ -120,7 +120,7 @@ Easy.  Just think about how libtiff does it with the TIFFOpen function.
 ===============================
 In this case, it helps to be a bit familiar with the workflow for
 libtiff's C API.  Here, though, you need only supply the number of
-IFDs you will be writing, then use visit_ifd when you are finished
+IFDs you will be writing, then use set_subdirectory when you are finished
 with the primary IFD.
 
     >>> import skimage.data
@@ -200,9 +200,9 @@ We can also see by inspection that two subIFDs have been written.
       Planar Configuration: single image plane
       SubIFD Offsets: 1528596 1578110
 
-We can reach each subIFD with the visit method.
+We can reach each subIFD with the set_subdirectory method.
 
-    >>> t.visit_ifd(t['SubIFDs'][1])
+    >>> t.set_subdirectory(t['SubIFDs'][1])
     >>> t
     TIFF Directory at offset 0x18147e (1578110)
       Image Width: 512 Image Length: 512
