@@ -12,7 +12,6 @@ Welcome to spiff's documentation!
 
    introduction
    how_do_i
-   modules
 
 
 Indices and tables
