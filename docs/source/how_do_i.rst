@@ -70,14 +70,14 @@ TIFFPrintDirectory function.
     >>> t[:] = image
     >>> # Finish off the first IFD and signal that there will be
     >>> # another.
-    >>> t.new_image()
+    >>> t.write_directory()
     >>> # Setup the 2nd IFD. 
     >>> for tag, value in tags.keys():
     ...     t[tag] = value
     >>> t[:] = image
     >>> # Finish off the second IFD and signal that there will be
     >>> # another.
-    >>> t.new_image()
+    >>> t.write_directory()
     >>> # Setup the 3rd IFD. 
     >>> for tag, value in tags.keys():
     ...     t[tag] = value
@@ -146,7 +146,7 @@ We have to finish by writing the primary IFD image, then we can move along to
 the subIFDs.  Actually, we **MUST** move along to the subIFDs next.
 
     >>> t[:] = image
-    >>> t.new_image()
+    >>> t.write_directory()
 
 We will make the first IFD different by using LZW compression.
 
@@ -164,7 +164,7 @@ We will make the first IFD different by using LZW compression.
 And finally, position to the second subIFD and write that one using JPEG
 compression and close the file.
 
-    >>> t.new_image()
+    >>> t.write_directory()
     >>> t['Photometric'] = lib.Photometric.YCBCR
     >>> t['ImageWidth'] = w
     >>> t['ImageLength'] = h
