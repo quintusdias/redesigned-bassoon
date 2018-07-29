@@ -6,7 +6,7 @@ How do I...?
 ==============================
 At its simplest, TIFFs are images with usually very specific metadata tags.
 Most of the time, you can use numpy's slicing model to handle the image data
-and python' dictionary model to handle the tags.  For this RGB image, here's
+and python's dictionary model to handle the tags.  For this RGB image, here's
 the minimum you'd have to do to create a tiled TIFF.
 
     >>> import skimage.data
@@ -86,7 +86,8 @@ TIFFPrintDirectory function.
 
 ... create a BigTIFF...
 ==============================
-Easy.  Just think about how libtiff does it with the TIFFOpen function.
+Easy.  Just think about how libtiff does it with the TIFFOpen function, you
+just use 'w8' instead of 'w' for the mode argument.
 
     >>> import skimage.data
     >>> image = skimage.data.astronaut()
@@ -123,20 +124,28 @@ libtiff's C API.  Here, though, you need only supply the number of
 IFDs you will be writing, then use set_subdirectory when you are finished
 with the primary IFD.
 
+We're going to be reusing a lot of tags, so we'll store them in a dictionary
+and modify as needed.
+
     >>> import skimage.data
     >>> image = skimage.data.astronaut()
     >>> w, h, nz = image.shape
     >>> from spiff import TIFF, lib
     >>> t = TIFF('astronaut3.tif', mode='w')
-    >>> t['Photometric'] = lib.Photometric.RGB
-    >>> t['ImageWidth'] = w
-    >>> t['ImageLength'] = h
-    >>> t['TileWidth'] = int(w/2)
-    >>> t['TileLength'] = int(h/2)
-    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
-    >>> t['BitsPerSample'] = 8
-    >>> t['SamplesPerPixel'] = 3
-    >>> t['Compression'] = lib.Compression.NONE
+    >>> tags = {
+    ...     'Photometric': lib.Photometric.RGB,
+    ...     'ImageWidth': w,
+    ...     'ImageLength': h,
+    ...     'TileWidth': int(w/2),
+    ...     'TileLength': int(h/2),
+    ...     'PlanarConfig': lib.PlanarConfig.CONTIG,
+    ...     'BitsPerSample': 8,
+    ...     'SamplesPerPixel': 3,
+    ...     'Compression': lib.Compression.NONE,
+    ... }
+    >>> for tag, value in tags.items():
+    ...     t[tag] = value
+
 
 Now write the SubIFDs tag.  We will create two SubIFD images.
 
@@ -150,33 +159,23 @@ the subIFDs.  Actually, we **MUST** move along to the subIFDs next.
 
 We will make the first IFD different by using LZW compression.
 
-    >>> t['Photometric'] = lib.Photometric.RGB
-    >>> t['ImageWidth'] = w
-    >>> t['ImageLength'] = h
-    >>> t['TileWidth'] = int(w/2)
-    >>> t['TileLength'] = int(h/2)
-    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
-    >>> t['BitsPerSample'] = 8
-    >>> t['SamplesPerPixel'] = 3
-    >>> t['Compression'] = lib.Compression.LZW
+    >>> tags['Photometric'] = lib.Photometric.RGB
+    >>> tags['Compression'] = lib.Compression.LZW
+    >>> for tag, value in tags.items():
+    ...     t[tag] = value
     >>> t[:] = image
 
 And finally, position to the second subIFD and write that one using JPEG
 compression and close the file.
 
     >>> t.write_directory()
-    >>> t['Photometric'] = lib.Photometric.YCBCR
-    >>> t['ImageWidth'] = w
-    >>> t['ImageLength'] = h
-    >>> t['TileWidth'] = int(w/2)
-    >>> t['TileLength'] = int(h/2)
-    >>> t['PlanarConfig'] = lib.PlanarConfig.CONTIG
-    >>> t['BitsPerSample'] = 8
-    >>> t['SamplesPerPixel'] = 3
-    >>> t['Compression'] = lib.Compression.JPEG
-    >>> t['JPEGColorMode'] = lib.JPEGColorMode.RGB
-    >>> t['JPEGQuality'] = 75
-    >>> t['YCbCrSubsampling'] = (1, 1)
+    >>> tags['Photometric'] = lib.Photometric.YCBCR
+    >>> tags['Compression'] = lib.Compression.JPEG
+    >>> tags['JPEGColorMode'] = lib.JPEGColorMode.RGB
+    >>> tags['JPEGQuality'] = 75
+    >>> tags['YCbCrSubsampling'] = (1, 1)
+    >>> for tag, value in tags.items():
+    ...     t[tag] = value
     >>> t[:] = image
     >>> del t
 
