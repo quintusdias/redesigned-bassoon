@@ -38,9 +38,9 @@ the minimum you'd have to do to create a tiled TIFF.
 Using [:] means that you don't have to bother writing each individual tile,
 spiff will handle that for you.  
 
-If you are familiar with the libtiff's command line utility tiffinfo, you may
-recognize that the spiff.TIFF class has tied its __repr__ method to libtiff's
-TIFFPrintDirectory function.
+If you are familiar with the libtiff's command line utility ``tiffinfo``, you
+may recognize that the spiff.TIFF class has tied its :py:meth:`__repr__` method
+to libtiff's ``TIFFPrintDirectory`` function.
 
 ... create a multi-page TIFF ...
 ================================
@@ -86,7 +86,7 @@ TIFFPrintDirectory function.
 
 ... create a BigTIFF...
 ==============================
-Easy.  Just think about how libtiff does it with the TIFFOpen function, you
+Easy.  Just think about how libtiff does it with the ``TIFFOpen`` function, you
 just use 'w8' instead of 'w' for the mode argument.
 
     >>> import skimage.data
