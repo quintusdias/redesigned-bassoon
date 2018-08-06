@@ -7,6 +7,13 @@ import tempfile
 import unittest
 import warnings
 
+try:
+    # 3.7+
+    import importlib.resources as ir
+except ImportError:
+    # 3rd party library imports, 3.6 and earlier.
+    import importlib_resources as ir
+
 # Third party library imports
 import numpy as np
 import skimage.data
@@ -96,6 +103,89 @@ class TestSuite(unittest.TestCase):
                         self.assertTrue(sz > 740000)
                     else:
                         self.assertTrue(sz < 540000)
+
+    def test_read_write_palette_image(self):
+        """
+        Scenario: Read and write a palette TIFF.
+
+        Expected Result:  The data as read by the RGBA interface should match
+        what is constructed by hand.
+        """
+        with ir.path('tests.data', 'tiger-palette-tile-08.tif') as path:
+            t = TIFF(path)
+
+        # Read the raw single-plane data first.  These are just the indices
+        # into the color map.
+        im_indexed_expected = t[:]
+        colormap = t['ColorMap']
+        h, w = t['ImageLength'], t['ImageWidth']
+
+        # Read the RGB version for later comparison.
+        t.rgba = True
+        im_rgba_expected = t[:]
+
+        # The colormap should be a numpy array of the appropriate shape for
+        # 8-bit data
+        self.assertEqual(colormap.shape, (256, 3))
+
+        # Write a palette image.
+        photo = lib.Photometric.PALETTE
+        comp = lib.Compression.NONE
+        pc = lib.PlanarConfig.CONTIG
+
+        tiled = (True, False)
+        modes = ('w', 'w8')
+
+        g = itertools.product(tiled, modes)
+        for tiled, mode in g:
+            with self.subTest(tiled=tiled, mode=mode):
+                with tempfile.NamedTemporaryFile(suffix='.tif') as tfile:
+
+                    t = TIFF(tfile.name, mode=mode)
+                    t['Photometric'] = photo
+                    t['Compression'] = comp
+                    t['BitsPerSample'] = 8
+                    t['SamplesPerPixel'] = 1
+                    t['PlanarConfig'] = pc
+
+                    t['ImageWidth'] = w
+                    t['ImageLength'] = h
+
+                    if tiled:
+                        tw, th = 256, 256
+                        t['TileLength'] = th
+                        t['TileWidth'] = tw
+                    else:
+                        rps = 256
+                        t['RowsPerStrip'] = rps
+
+                    t['ColorMap'] = colormap
+                    t[:] = im_indexed_expected
+
+                    del t
+
+                    t = TIFF(tfile.name)
+                    self.assertEqual(t['Photometric'], photo)
+                    self.assertEqual(t['Compression'], comp)
+                    self.assertEqual(t['ImageWidth'], w)
+                    self.assertEqual(t['ImageLength'], h)
+                    self.assertEqual(t['SamplesPerPixel'], 1)
+                    if tiled:
+                        self.assertEqual(t['TileWidth'], tw)
+                        self.assertEqual(t['TileLength'], th)
+                    else:
+                        self.assertEqual(t['RowsPerStrip'], rps)
+
+                    np.testing.assert_array_equal(t['ColorMap'], colormap)
+
+                    im_indexed_actual = t[:]
+                    t.rgba = True
+                    im_rgba_actual = t[:]
+
+                np.testing.assert_array_equal(im_indexed_actual,
+                                              indexed_expected)
+                np.testing.assert_array_equal(im_rgba_actual,
+                                              rgba_expected)
 
     def test_write_read_separated_non_cmyk(self):
         """

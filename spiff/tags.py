@@ -178,7 +178,7 @@ TAGS = {
         'number': 319,
         'type': None,
     },
-    'Colormap': {
+    'ColorMap': {
         'number': 320,
         'type': (ctypes.c_uint16, ctypes.c_uint16, ctypes.c_uint16),
     },
