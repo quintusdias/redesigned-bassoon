@@ -422,7 +422,12 @@ def setField(fp, tag, value):
     # Append the proper return type for the tag.
     tag_num = TAGS[tag]['number']
     tag_type = TAGS[tag]['type']
-    if tag_num == 330:
+    if tag_num == 320:
+        # ColorMap
+        # One array passed for each sample.
+        args = [ctypes.POINTER(ctypes.c_uint16) for _ in range(value.shape[1])]
+        ARGTYPES.extend(args)
+    elif tag_num == 330:
         # SubIFDs
         ARGTYPES.extend([ctypes.c_uint16, ctypes.POINTER(ctypes.c_uint64)])
     elif tag_num == 333:
@@ -444,6 +449,14 @@ def setField(fp, tag, value):
             "supported."
         )
         raise NotImplementedError(msg)
+
+    elif tag_num == 320:
+        # ColorMap:  split the colormap into uint16 arrays for each sample.
+        columns = [value[:, j].astype(np.uint16) for j in range(value.shape[1])]
+        red = columns[0].ctypes.data_as(ctypes.POINTER(ctypes.c_uint16))
+        green = columns[1].ctypes.data_as(ctypes.POINTER(ctypes.c_uint16))
+        blue = columns[2].ctypes.data_as(ctypes.POINTER(ctypes.c_uint16))
+        _LIBTIFF.TIFFSetField(fp, tag_num, red, green, blue)
 
     elif tag_num == 330:
         # SubIFDs:  the array value should just be zeros.  No need for the
@@ -568,15 +581,59 @@ def getField(fp, tag):
     """
     Corresponds to TIFFGetField in the TIFF library.
     """
+    import pdb; pdb.set_trace()
     err_handler, warn_handler = _set_error_warning_handlers()
 
+    tag_num = TAGS[tag]['number']
+
+    if tag_num == 320:
+        # ColorMap
+        import pdb; pdb.set_trace()
+        value = _getField_colormap(fp, tag)
+    else:
+        value = _getField_default(fp, tag)
+
+    _reset_error_warning_handlers(err_handler, warn_handler)
+
+    return value
+
+
+def _getField_colormap(fp, tag):
+    """
+    """
+    import pdb; pdb.set_trace()
+    _argtypes = [ctypes.POINTER(ctypes.c_uint16),
+                 ctypes.POINTER(ctypes.c_uint16),
+                 ctypes.POINTER(ctypes.c_uint16)]
+    _LIBTIFF.TIFFGetField.argtypes = ARGTYPES
+
+    _LIBTIFF.TIFFGetField.restype = check_error
+
+    bps = lib.getFieldDefaulted(fp, 'BitsPerSample')
+    n = 1 << bps
+    red = np.zeros((n, 1), dtype=np.uint16)
+    green = np.zeros((n, 1), dtype=np.uint16)
+    blue = np.zeros((n, 1), dtype=np.uint16)
+    _LIBTIFF.TIFFGetField(fp, tag_num,
+                              red.ctypes.data_as(np.uint16),
+                              green.ctypes.data_as(np.uint16),
+                              blue.ctypes.data_as(np.uint16))
+    colormap = np.zeros((n, 3), dtype=np.uint16)
+    colormap[:, 0] = red
+    colormap[:, 1] = green
+    colormap[:, 2] = blue
+    return colormap
+
+def _getField_default(fp, tag):
+    """
+    Corresponds to TIFFGetField in the TIFF library.
+    """
     ARGTYPES = [ctypes.c_void_p, ctypes.c_int32]
 
     tag_num = TAGS[tag]['number']
 
     # Append the proper return type for the tag.
-    tag_type = TAGS[tag]['type']
-    ARGTYPES.append(ctypes.POINTER(tag_type))
+    ARGTYPES.append(_argtypes)
     _LIBTIFF.TIFFGetField.argtypes = ARGTYPES
 
     _LIBTIFF.TIFFGetField.restype = check_error

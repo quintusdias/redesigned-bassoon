@@ -699,6 +699,12 @@ class TIFF(object):
             else:
                 item = self.tags[idx]
 
+                # Post process as necessary.
+                if idx == 'ColorMap':
+                    n = len(item) // 3
+                    item = np.array(item, dtype=np.uint16).reshape((3, n))
+                    item = item.T
+
         return item
 
     def _readPartialStripped(self, rowslice, colslice, zslice):
