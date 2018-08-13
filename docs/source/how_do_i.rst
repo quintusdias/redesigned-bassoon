@@ -9,6 +9,8 @@ Most of the time, you can use numpy's slicing model to handle the image data
 and python's dictionary model to handle the tags.  For this RGB image, here's
 the minimum you'd have to do to create a tiled TIFF.
 
+.. doctest::
+
     >>> import skimage.data
     >>> image = skimage.data.astronaut()
     >>> w, h, nz = image.shape
@@ -34,6 +36,12 @@ the minimum you'd have to do to create a tiled TIFF.
       Samples/Pixel: 3
       Planar Configuration: single image plane
     >>> del t
+
+.. testcleanup::
+
+    >>> import pathlib
+    >>> p = pathlib.Path('astronaut3.tif')
+    >>> p.unlink()
 
 Using [:] means that you don't have to bother writing each individual tile,
 spiff will handle that for you.  
@@ -116,6 +124,24 @@ just use 'w8' instead of 'w' for the mode argument.
     >>> del t
     >>> !file astronaut3.tif
     astronaut3.tif: Big TIFF image data, little-endian
+
+... view the majority of TIFFs easily?
+======================================
+Ok yes, that sounds strange.  But TIFF hasn't been described as
+Thousands of Incompatible File Formats for no reason.  There's RGB,
+Min-Is-Black, Min-Is-White, Palette, YCbCr/JPEG, Separated (CMYK), LogL,
+LogLuv, and a whole slew of others.  Fortunately libtiff provides
+a simple way to read all those photometric intrepretations named
+above in a consistent and convenient manner and it's called the RGBA
+interface.  Whether or not you should is up to you, but here's how
+you can do it.  The following TIFF has a photometric interpretation
+of YCbCr with old-JPEG compression. This is a case where you really
+have no option but to use the convenience method, which only involves
+setting the rgba property.  That translates into reading an image using
+libtiff's RGBA interface.
+
+.. plot:: pyplots/rgba.py
+   :include-source:
 
 ... create a TIFF with subIFDs?
 ===============================
